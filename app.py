@@ -70,21 +70,61 @@ for row in rows:
             st.rerun()
 
 # --- رادار الـ Jackpot والتنبيه الصوتي ---
+# --- بداية الجزء المستبدل ---
 st.divider()
+
+# 1. رادار الـ Jackpot والتنبيه الصوتي
+st.subheader("🎯 رادار الصيد والتحليل")
+
+# حساب غياب الجوائز بشكل أدق للعرض
+missing_big = 0
+if st.session_state.history:
+    bigs = [7, 8]
+    found = [i for i, x in enumerate(reversed(st.session_state.history)) if x in bigs]
+    missing_big = found[0] if found else len(st.session_state.history)
+
 if missing_big > 40 and st.session_state.vault > 200:
     st.warning("🔥 **تنبيه صيد:** السيرفر مشحون والجوائز غائبة! استعد.")
-    # كود تنبيه صوتي بسيط للمتصفح
     st.components.v1.html("""<audio autoplay><source src="https://www.soundjay.com/buttons/beep-01a.mp3" type="audio/mpeg"></audio>""", height=0)
+else:
+    st.info(f"📡 الرادار يراقب... (غياب الرموز الكبرى: {missing_big} جولة)")
 
-# --- توقعات AI وسجل البيانات ---
-if len(st.session_state.history) > 10:
-    st.subheader("🤖 تحليل النمط")
-    # هنا يمكن إضافة RandomForestClassifier للتنبؤ الفعلي
-    last_5 = [SYMBOLS[c]['name'] for c in st.session_state.history[-5:]]
-    st.write(f"آخر 5 نتائج: {' ← '.join(last_5)}")
+# 2. تحليل النمط وتوقعات AI
+col_a, col_b = st.columns(2)
 
-if st.button("↩️ تراجع (Undo)"):
-    if st.session_state.history:
-        last = st.session_state.history.pop()
-        st.session_state.vault -= SYMBOLS[last]['value']
+with col_a:
+    st.write("**📜 آخر 5 نتائج:**")
+    if len(st.session_state.history) > 0:
+        recent = [SYMBOLS[c]['name'] for c in st.session_state.history[-5:]]
+        st.success(" ← ".join(recent))
+    else:
+        st.write("بانتظار الإدخال...")
+
+with col_b:
+    st.write("**📊 حالة الغرفة:**")
+    if len(st.session_state.history) < 5:
+        st.write("تحليل النمط (0/5)...")
+    else:
+        # حساب بسيط للتقلب (Vibe)
+        diffs = [abs(st.session_state.history[i] - st.session_state.history[i-1]) for i in range(1, len(st.session_state.history))]
+        avg_vibe = sum(diffs[-5:]) / 5
+        if avg_vibe > 3:
+            st.error("متقلبة جداً 🔥")
+        else:
+            st.success("مستقرة ⚖️")
+
+# 3. زر التراجع والمسح
+st.divider()
+c1, c2 = st.columns(2)
+with c1:
+    if st.button("↩️ تراجع (Undo)"):
+        if st.session_state.history:
+            last = st.session_state.history.pop()
+            st.session_state.vault -= SYMBOLS[last]['value']
+            st.rerun()
+with c2:
+    if st.button("🗑️ مسح الكل (Reset)"):
+        st.session_state.history = []
+        st.session_state.vault = 0
         st.rerun()
+
