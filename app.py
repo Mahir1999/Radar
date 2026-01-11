@@ -5,88 +5,93 @@ from datetime import datetime
 import pytz
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Jackpot Sniper v12.0", page_icon="🎯", layout="centered")
+st.set_page_config(page_title="Stable Radar v14.0", page_icon="🎯", layout="centered")
 
 # --- ستايل الواجهة ---
 st.markdown("""
     <style>
-    .stButton>button { width: 100%; height: 55px; font-weight: bold; border-radius: 12px; }
-    div[data-testid="stMetric"] { background-color: #0c0c0c; padding: 15px; border-radius: 15px; border: 1px solid #1e1e1e; color: #39ff14; }
+    .stButton>button { width: 100%; height: 50px; font-weight: bold; border-radius: 10px; }
+    div[data-testid="stMetric"] { background-color: #0c0c0c; padding: 10px; border-radius: 12px; border: 1px solid #1e1e1e; color: #39ff14; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- تعريف الرموز (قيم تراكمية لضمان عدم التصفير) ---
+# --- تعريف الرموز (لاحظ: كل القيم أصبحت موجبة لضمان عدم التصفير) ---
 SYMBOLS = {
-    1: {"name": "🍅 طماطم", "val": 10}, 2: {"name": "🌽 ذرة", "val": 10},
-    3: {"name": "🥕 جزر", "val": 10}, 4: {"name": "🫑 فلفل", "val": 10},
-    5: {"name": "🐔 دجاجة", "val": 5}, 6: {"name": "🐄 بقر", "val": 5},
-    7: {"name": "🐟 سمك", "val": -10}, 8: {"name": "🦐 روبيان", "val": -15}
+    1: {"name": "🍅 طماطم", "val": 1}, 2: {"name": "🌽 ذرة", "val": 1},
+    3: {"name": "🥕 جزر", "val": 1}, 4: {"name": "🫑 فلفل", "val": 1},
+    5: {"name": "🐔 دجاجة", "val": 1}, 6: {"name": "🐄 بقر", "val": 1},
+    7: {"name": "🐟 سمك", "val": 1}, 8: {"name": "🦐 روبيان", "val": 1}
 }
 
-# --- تهيئة البيانات ---
+# --- تهيئة البيانات (Session State) ---
 if 'history' not in st.session_state:
-    st.session_state.update({'history': [], 'vault': 0})
+    st.session_state.history = []
+if 'vault' not in st.session_state:
+    st.session_state.vault = 0
 
 def add_entry(code):
+    # إضافة القيمة للميزانية (دائماً جمع +)
     st.session_state.vault += SYMBOLS[code]['val']
+    # إضافة الكود للسجل
     st.session_state.history.append(code)
 
-# --- الهيدر ---
-st.title("🎯 رادار صيد الـ Jackpot")
+# --- الواجهة ---
+st.title("🎯 رادار الصيد المستقر")
 makkah = datetime.now(pytz.timezone('Asia/Riyadh')).strftime("%I:%M %p")
-st.write(f"🕋 توقيت مكة: **{makkah}**")
+st.write(f"🕋 مكة: **{makkah}**")
 
-# --- عدادات الرادار ---
+# عرض العدادات
 c1, c2 = st.columns(2)
 with c1:
-    st.metric("رصيد السيرفر التراكمي", st.session_state.vault)
+    st.metric("رصيد العمليات", st.session_state.vault)
 with c2:
-    missing_big = 0
-    if st.session_state.history:
-        bigs = [7, 8]
-        found = [i for i, x in enumerate(reversed(st.session_state.history)) if x in bigs]
-        missing_big = found[0] if found else len(st.session_state.history)
-    st.metric("عداد غياب الجوائز", f"{missing_big} جولة")
+    st.metric("إجمالي الجولات المسجلة", len(st.session_state.history))
 
-# --- لوحة الأزرار ---
-st.write("### 🔘 سجل النتيجة الحالية:")
+# --- الأزرار ---
+st.write("### 🔘 سجل النتيجة:")
 r1, r2 = st.columns(4), st.columns(4)
 for i, code in enumerate(range(1, 5)):
     if r1[i].button(SYMBOLS[code]['name']):
-        add_entry(code); st.rerun()
+        add_entry(code)
+        st.rerun()
 for i, code in enumerate(range(5, 9)):
     if r2[i].button(SYMBOLS[code]['name']):
-        add_entry(code); st.rerun()
+        add_entry(code)
+        st.rerun()
 
-# --- محرك التوقعات (مضبوط على 20 جولة للدقة القصوى) ---
+# --- قسم التوقعات (يظهر دائماً الآن) ---
 st.divider()
-if len(st.session_state.history) >= 20:
-    st.subheader("🤖 توقعات الـ AI (دقة عالية)")
-    
-    # تحليل التكرار والأنماط
+st.subheader("🤖 تحليل الرادار")
+
+total_rounds = len(st.session_state.history)
+
+if total_rounds >= 20:
+    # حساب التوقع بناءً على أكثر عنصر تكراراً في السجل
     counts = pd.Series(st.session_state.history).value_counts()
     likely_code = counts.idxmax()
-    
-    st.success(f"الاحتمال الأكثر تكراراً حالياً: **{SYMBOLS[likely_code]['name']}**")
-    
-    # إشارة الصيد
-    if missing_big > 45 and st.session_state.vault > 250:
-        st.error("🚨 **إشارة Jackpot قوية:** السيرفر مشحون والغياب طويل جداً!")
-    else:
-        st.info("⚖️ النمط مستقر حالياً، اتبع التوقعات بحذر.")
+    st.success(f"✅ **التوقع القادم:** {SYMBOLS[likely_code]['name']}")
+    st.info("الذكاء الاصطناعي يحلل الآن بناءً على دقة 20 جولة.")
 else:
-    progress = len(st.session_state.history)
-    st.info(f"📡 جاري بناء قاعدة البيانات للدقة القصوى... ({progress}/20)")
-    st.progress(progress / 20)
+    # شريط التقدم للوصول لـ 20 جولة
+    st.warning(f"⏳ جاري جمع البيانات.. سجلت {total_rounds} من أصل 20 جولة")
+    st.progress(total_rounds / 20)
 
-# --- التحكم ---
+# --- سجل آخر 5 جولات ---
+if total_rounds > 0:
+    st.write("**📜 آخر 5 جولات:**")
+    st.write(" ← ".join([SYMBOLS[c]['name'] for c in st.session_state.history[-5:]]))
+
+# --- أزرار التحكم ---
 st.divider()
 ca, cb = st.columns(2)
-with ca:
+with ca: 
     if st.button("↩️ تراجع (Undo)"):
         if st.session_state.history:
             last = st.session_state.history.pop()
-            st.session_state.vault -= SYMBOLS[last]['val']; st.rerun()
+            st.session_state.vault -= SYMBOLS[last]['val']
+            st.rerun()
 with cb:
-    if st.button("🗑️ جلسة جديدة (Reset)"):
-        st.session_state.history = []; st.session_state.vault = 0; st.rerun()
+    if st.button("🗑️ مسح الكل (Reset)"):
+        st.session_state.history = []
+        st.session_state.vault = 0
+        st.rerun()
