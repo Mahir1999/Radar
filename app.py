@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="AI Pro Hunter v52", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Ultra Horizontal Radar v53", page_icon="🎯", layout="wide")
 
 st.markdown("""
     <style>
@@ -11,7 +11,7 @@ st.markdown("""
         text-align: center; margin-bottom: 10px; font-size: 18px; color: #39ff14;
     }
     .timeline-container {
-        display: flex; justify-content: flex-start; gap: 8px; margin-bottom: 20px; padding: 10px;
+        display: flex; justify-content: flex-start; gap: 8px; margin-bottom: 15px; padding: 10px;
         background: #0e1117; border-radius: 8px; border: 1px solid #333; overflow-x: auto;
     }
     .timeline-item {
@@ -20,7 +20,7 @@ st.markdown("""
     }
     .prob-box { 
         background: #111; border: 1px solid #333; border-radius: 8px; 
-        padding: 10px; text-align: center;
+        padding: 8px; text-align: center;
     }
     .main-highlight { border: 2px solid #39ff14 !important; background: #002200 !important; }
     .stat-card {
@@ -41,7 +41,7 @@ SYMBOLS = {
 # --- نظام حفظ البيانات ---
 if 'history' not in st.session_state: st.session_state.history = []
 if 'total_net' not in st.session_state: st.session_state.total_net = 0
-if 'last_bets' not in st.session_state: st.session_state.last_bets = {i: 0 for i in range(1, 10)}
+if 'last_bets' not in st.session_state: st.session_state.last_bets = {i: 0 for i in range(1, 9)} # تم حذف 9 (الجاكبوت)
 
 def register_result(code):
     current_bets = st.session_state.last_bets
@@ -50,20 +50,20 @@ def register_result(code):
     st.session_state.total_net += (win_amount - total_bet)
     st.session_state.history.append(code)
 
-# --- الهيدر العلوي (أفقي) ---
-st.title("🎯 رادار الصياد الذكي v52.0")
-c_stat1, c_stat2, c_stat3, c_stat4 = st.columns([2, 1, 1, 1])
-with c_stat1:
+# --- الهيدر العلوي ---
+c_head1, c_head2, c_head3, c_head4 = st.columns([2, 1, 1, 1])
+with c_head1:
     color = "#39ff14" if st.session_state.total_net >= 0 else "#ff4b4b"
     st.markdown(f'<div class="stat-card">صافي الأرباح: <b style="color:{color};">{st.session_state.total_net}</b></div>', unsafe_allow_html=True)
-with c_stat2:
+with c_head2:
     st.markdown(f'<div class="stat-card">الجولة: <b>{len(st.session_state.history)}</b></div>', unsafe_allow_html=True)
-with c_stat3:
+with c_head3:
     if st.button("🗑️ تصفير الكل"): st.session_state.clear(); st.rerun()
-with c_stat4:
-    if st.button("🧹 مسح الرهان"): st.session_state.last_bets = {i: 0 for i in range(1, 10)}; st.rerun()
+with c_head4:
+    if st.button("🧹 مسح الرهان"): 
+        st.session_state.last_bets = {i: 0 for i in range(1, 9)}; st.rerun()
 
-# --- الشريط الزمني والعنصر الأخير ---
+# --- تتبع التاريخ ---
 hist = st.session_state.history
 if hist:
     st.markdown(f'<div class="last-result-banner">⏮️ العنصر الأخير: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
@@ -73,49 +73,38 @@ if hist:
     timeline_html += '</div>'
     st.markdown(timeline_html, unsafe_allow_html=True)
 
-# --- تحليل الاحتمالات المتقدم (Bi-gram Logic) ---
+# --- مصفوفة الاحتمالات (تنسيق أفقي) ---
 top_candidate = None
-st.subheader("📊 مصفوفة التوقعات الذكية")
+st.write("📊 **مصفوفة التوقعات القادمة:**")
 if len(hist) >= 20:
-    # منطق محسّن: يبحث عن تسلسل آخر جولة وما قبلها
     last_val = hist[-1]
     lookback = hist[-80:]
     next_options = [lookback[i+1] for i in range(len(lookback)-1) if lookback[i] == last_val]
-    
     if next_options:
         sorted_probs = sorted([(c, (next_options.count(c)/len(next_options))*100) for c in set(next_options)], key=lambda x: x[1], reverse=True)
         top_candidate = sorted_probs[0][0]
-        cols = st.columns(len(sorted_probs[:6])) # عرض أفقي لـ 6 احتمالات كحد أقصى
-        for i, (code, prob) in enumerate(sorted_probs[:6]):
-            with cols[i]:
+        p_cols = st.columns(min(len(sorted_probs), 9))
+        for i, (code, prob) in enumerate(sorted_probs[:9]):
+            with p_cols[i]:
                 is_best = "main-highlight" if i == 0 else ""
-                st.markdown(f'<div class="prob-box {is_best}">{SYMBOLS[code]["name"]}<br><b style="color:#39ff14;">{prob:.1f}%</b></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="prob-box {is_best}">{SYMBOLS[code]["name"].split()[0]}<br><b>{prob:.0f}%</b></div>', unsafe_allow_html=True)
 else:
-    st.info(f"📡 جاري تحليل النمط... متبقي {20-len(hist)} جولات.")
+    st.info(f"📡 جاري تحليل البيانات... متبقي {20-len(hist)} جولة.")
 
-# --- لوحة الرهان (تنسيق أفقي) ---
-st.subheader("📝 إدارة مبالغ الرهان")
-def label_style(code): return f"🌟 {SYMBOLS[code]['name']}" if code == top_candidate else SYMBOLS[code]['name']
+# --- إدارة مبالغ الرهان (أفقي بالكامل بدون جاكبوت) ---
+st.write("📝 **إدارة مبالغ الرهان (أفقي):**")
+def label_style(code): return f"🌟 {SYMBOLS[code]['name'].split()[0]}" if code == top_candidate else SYMBOLS[code]['name'].split()[0]
 
-# الصف الأول: الأهداف الكبرى
-r1_c1, r1_c2, r1_c3, r1_c4, r1_c5 = st.columns(5)
-st.session_state.last_bets[5] = r1_c1.number_input(label_style(5), 0, 5000, st.session_state.last_bets[5], 5)
-st.session_state.last_bets[7] = r1_c2.number_input(label_style(7), 0, 5000, st.session_state.last_bets[7], 5)
-st.session_state.last_bets[6] = r1_c3.number_input(label_style(6), 0, 5000, st.session_state.last_bets[6], 5)
-st.session_state.last_bets[8] = r1_c4.number_input(label_style(8), 0, 5000, st.session_state.last_bets[8], 5)
-st.session_state.last_bets[9] = r1_c5.number_input(label_style(9), 0, 5000, st.session_state.last_bets[9], 5)
+bet_cols = st.columns(8)
+bet_order = [5, 7, 6, 8, 1, 2, 3, 4] # استثناء 9 (الجاكبوت)
+for i, code in enumerate(bet_order):
+    with bet_cols[i]:
+        st.session_state.last_bets[code] = st.number_input(label_style(code), 0, 5000, st.session_state.last_bets[code], 5, key=f"bet_{code}")
 
-# الصف الثاني: الخضروات
-r2_c1, r2_c2, r2_c3, r2_c4 = st.columns(4)
-st.session_state.last_bets[1] = r2_c1.number_input(label_style(1), 0, 5000, st.session_state.last_bets[1], 5)
-st.session_state.last_bets[2] = r2_c2.number_input(label_style(2), 0, 5000, st.session_state.last_bets[2], 5)
-st.session_state.last_bets[3] = r2_c3.number_input(label_style(3), 0, 5000, st.session_state.last_bets[3], 5)
-st.session_state.last_bets[4] = r2_c4.number_input(label_style(4), 0, 5000, st.session_state.last_bets[4], 5)
-
-# --- أزرار التسجيل (أفقية بالكامل) ---
-st.subheader("🔘 تسجيل النتيجة")
+# --- تسجيل النتائج (أفقي بالكامل) ---
+st.write("🔘 **سجل النتيجة فور ظهورها:**")
 res_cols = st.columns(9)
-order = [5, 7, 6, 8, 9, 1, 2, 3, 4]
-for i, code in enumerate(order):
-    if res_cols[i].button(SYMBOLS[code]["name"].split()[0]):
+res_order = [5, 7, 6, 8, 9, 1, 2, 3, 4]
+for i, code in enumerate(res_order):
+    if res_cols[i].button(SYMBOLS[code]["name"].split()[0], key=f"res_{code}"):
         register_result(code); st.rerun()
