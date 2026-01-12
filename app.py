@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="AI Probability Matrix v43", page_icon="📊", layout="centered")
+st.set_page_config(page_title="Individual Bet Radar v44", page_icon="🎯", layout="centered")
 
 st.markdown("""
     <style>
@@ -12,6 +12,7 @@ st.markdown("""
     }
     .high-prob { border: 2px solid #39ff14 !important; background: #002200 !important; }
     .countdown-box { padding: 20px; background: #001a33; border: 2px dashed #0088ff; border-radius: 15px; text-align: center; }
+    .bet-label { font-size: 14px; font-weight: bold; color: #ccc; margin-bottom: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -32,63 +33,74 @@ def register_result(code, bets):
     st.session_state.total_net += (win_amount - total_bet)
     st.session_state.history.append(code)
 
-st.title("📊 مصفوفة الاحتمالات الذكية v43.0")
+st.title("🎯 رادار الإدارة الفردية v44.0")
 
+# --- 🛰️ مصفوفة الاحتمالات ---
 hist = st.session_state.history
-count = len(hist)
-
-# --- 🛰️ تحليل مصفوفة الاحتمالات القادمة ---
-if count >= 20:
+if len(hist) >= 20:
     last = hist[-1]
     active_window = hist[-60:]
-    # البحث عن كل ما ظهر بعد الرمز الأخير في التاريخ
     next_options = [active_window[i+1] for i in range(len(active_window)-1) if active_window[i] == last]
     
-    st.subheader("🎯 توزيع احتمالات الجولة القادمة:")
     if next_options:
+        st.subheader("🎯 احتمالات الجولة القادمة:")
         cols = st.columns(3)
-        # حساب التكرار لكل رمز متاح في الخيارات القادمة
-        unique_next = set(next_options)
         sorted_probs = sorted(
-            [(code, (next_options.count(code)/len(next_options))*100) for code in unique_next],
+            [(code, (next_options.count(code)/len(next_options))*100) for code in set(next_options)],
             key=lambda x: x[1], reverse=True
         )
-        
         for i, (code, prob) in enumerate(sorted_probs):
             with cols[i % 3]:
                 is_high = "high-prob" if i == 0 else ""
-                st.markdown(f"""
-                    <div class="prob-card {is_high}">
-                        <span style="font-size:20px;">{SYMBOLS[code]['name']}</span><br>
-                        <span style="color:#39ff14; font-weight:bold;">{prob:.1f}%</span>
-                    </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.info("🔄 النمط الحالي جديد، لا توجد بيانات سابقة لهذا التسلسل.")
+                st.markdown(f'<div class="prob-card {is_high}">{SYMBOLS[code]["name"]}<br><b style="color:#39ff14;">{prob:.1f}%</b></div>', unsafe_allow_html=True)
 else:
-    needed = 20 - count
-    st.markdown(f'<div class="countdown-box">📡 جاري جمع البيانات الاستراتيجية... متبقي {needed} جولات</div>', unsafe_allow_html=True)
-    st.progress(count / 20)
+    needed = 20 - len(hist)
+    st.markdown(f'<div class="countdown-box">📡 بانتظار {needed} جولة لتفعيل الرادار...</div>', unsafe_allow_html=True)
 
-# --- لوحة التسجيل والرهان ---
+# --- 📝 لوحة الرهان الفردية (التعديل المطلوب) ---
 st.divider()
-with st.expander("📝 إدارة مبالغ الرهان"):
-    c1, c2, c3 = st.columns(3)
-    b5 = c1.number_input("🐔 دجاجة", 0, 1000, 0, 5)
-    b7 = c2.number_input("🐟 سمك", 0, 1000, 0, 5)
-    b_v = c3.number_input("خضروات", 0, 1000, 0, 5)
-current_bets = {5:b5, 7:b7, 1:b_v/4, 2:b_v/4, 3:b_v/4, 4:b_v/4, 6:0, 8:0, 9:0}
+st.subheader("📝 إدارة مبالغ الرهان لكل عنصر:")
 
+with st.container():
+    # الأهداف الكبرى
+    c_big1, c_big2, c_big3 = st.columns(3)
+    bet_5 = c_big1.number_input("🐔 دجاجة (x45)", 0, 5000, 0, 5)
+    bet_7 = c_big2.number_input("🐟 سمك (x25)", 0, 5000, 0, 5)
+    bet_6 = c_big3.number_input("🐄 بقر (x15)", 0, 5000, 0, 5)
+
+    # الأهداف المتوسطة والخضروات
+    c_med1, c_med2 = st.columns(2)
+    bet_8 = c_med1.number_input("🦐 روبيان (x10)", 0, 5000, 0, 5)
+    bet_9 = c_med2.number_input("💰 جاكبوت (x100)", 0, 5000, 0, 5)
+
+    st.write("🥗 رهان الخضروات (x5):")
+    v1, v2, v3, v4 = st.columns(4)
+    bet_1 = v1.number_input("🍅 طماطم", 0, 5000, 0, 5)
+    bet_2 = v2.number_input("🌽 ذرة", 0, 5000, 0, 5)
+    bet_3 = v3.number_input("🥕 جزر", 0, 5000, 0, 5)
+    bet_4 = v4.number_input("🫑 فلفل", 0, 5000, 0, 5)
+
+# تجميع الرهانات في قاموس واحد للحساب
+current_bets = {
+    1: bet_1, 2: bet_2, 3: bet_3, 4: bet_4,
+    5: bet_5, 6: bet_6, 7: bet_7, 8: bet_8, 9: bet_9
+}
+
+# --- 🔘 تسجيل النتائج ---
+st.divider()
 st.write("### 🔘 سجل النتيجة فور ظهورها:")
-r1 = st.columns(5)
+row1 = st.columns(5)
 for i, code in enumerate([5, 7, 6, 8, 9]):
-    if r1[i].button(SYMBOLS[code]["name"].split()[0]): register_result(code, current_bets); st.rerun()
+    if row1[i].button(SYMBOLS[code]["name"].split()[0]): 
+        register_result(code, current_bets); st.rerun()
 
-r2 = st.columns(4)
+row2 = st.columns(4)
 for i in range(1, 5):
-    if r2[i-1].button(SYMBOLS[i]["name"].split()[0]): register_result(i, current_bets); st.rerun()
+    if row2[i-1].button(SYMBOLS[i]["name"].split()[0]): 
+        register_result(i, current_bets); st.rerun()
 
 # الإحصائيات الجانبية
-st.sidebar.metric("الأرباح", st.session_state.total_net)
-if st.sidebar.button("🗑️ تصفير"):
+st.sidebar.metric("صافي الربح الحالي", f"{st.session_state.total_net}")
+st.sidebar.write(f"📊 عدد الجولات المسجلة: {len(hist)}")
+if st.sidebar.button("🗑️ تصفير الجلسة"):
     st.session_state.clear(); st.rerun()
