@@ -2,7 +2,7 @@ import streamlit as st
 import time
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Pro Session Radar v73", page_icon="💎", layout="centered")
+st.set_page_config(page_title="Pro Session Radar v74", page_icon="💎", layout="centered")
 
 st.markdown("""
     <style>
@@ -27,13 +27,18 @@ st.markdown("""
         padding: 8px; text-align: center; font-size: 12px;
     }
     .main-highlight { border: 2px solid #39ff14 !important; background: #002200 !important; }
+    .category-box {
+        background: #1a1a1a; border-radius: 10px; padding: 10px; margin-top: 5px; border: 1px dashed #444;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 SYMBOLS = {
-    1: {"name": "🍅 طماطم"}, 2: {"name": "🌽 ذرة"}, 3: {"name": "🥕 جزر"}, 4: {"name": "🫑 فلفل"},
-    5: {"name": "🐔 دجاجة"}, 6: {"name": "🐑 خروف"}, 7: {"name": "🐟 سمك"}, 8: {"name": "🦐 روبيان"},
-    9: {"name": "💰 جكبوت"}
+    1: {"name": "🍅 طماطم", "type": "veg"}, 2: {"name": "🌽 ذرة", "type": "veg"}, 
+    3: {"name": "🥕 جزر", "type": "veg"}, 4: {"name": "🫑 فلفل", "type": "veg"},
+    5: {"name": "🐔 دجاجة", "type": "ani"}, 6: {"name": "🐑 خروف", "type": "ani"}, 
+    7: {"name": "🐟 سمك", "type": "ani"}, 8: {"name": "🦐 روبيان", "type": "ani"},
+    9: {"name": "💰 جكبوت", "type": "jack"}
 }
 
 if 'history' not in st.session_state: st.session_state.history = []
@@ -47,7 +52,7 @@ def register_result(code):
 def undo_last():
     if st.session_state.history:
         removed = st.session_state.history.pop()
-        if removed == 9: # إعادة تعيين الجكبوت لو كان هو اللي انحذف
+        if removed == 9:
             st.session_state.last_jackpot = 0
             for i, code in enumerate(st.session_state.history):
                 if code == 9: st.session_state.last_jackpot = i + 1
@@ -55,51 +60,36 @@ def undo_last():
 hist = st.session_state.history
 total_h = len(hist)
 
-# --- مدير الجلسة ---
+# --- مدير الجلسة ورادار الجكبوت ---
 elapsed_min = int((time.time() - st.session_state.start_time) / 60)
-st.markdown(f"""
-<div class="session-card">
-    <span>⏳ الوقت: <b>{elapsed_min} د</b></span>
-    <span>🎮 الجولات: <b>{total_h}</b></span>
-    <span>🛑 التركيز: <b>{'ممتاز' if elapsed_min < 30 else 'تحتاج راحة'}</b></span>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div class="session-card"><span>⏳ الوقت: <b>{elapsed_min} د</b></span><span>🎮 الجولات: <b>{total_h}</b></span><span>🛑 التركيز: <b>{"ممتاز" if elapsed_min < 30 else "تحتاج راحة"}</b></span></div>', unsafe_allow_html=True)
 
-# --- رادار الجكبوت ---
 jack_gap = total_h - st.session_state.last_jackpot
 if jack_gap > 80:
-    st.markdown(f'<div class="jackpot-alert">⚡ رادار الجكبوت: غائب منذ {jack_gap} جولة! قرب الانفجار.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="jackpot-alert">⚡ رادار الجكبوت: غائب منذ {jack_gap} جولة! احتمال انفجاره مرتفع.</div>', unsafe_allow_html=True)
 
-# --- صف أزرار التحكم (مسح وتراجع) ---
+# --- أزرار التحكم ---
 c_stat, c_undo, c_reset = st.columns([2, 1, 1])
 with c_stat:
     if total_h < 30:
         st.write(f"📡 نضوج البيانات: {int((total_h/30)*100)}%")
         st.progress(total_h/30)
-    else:
-        st.success("✅ النظام مستقر")
-
+    else: st.success("✅ النظام مستقر")
 with c_undo:
-    if st.button("↩️ تراجع"):
-        undo_last()
-        st.rerun()
-
+    if st.button("↩️ تراجع"): undo_last(); st.rerun()
 with c_reset:
-    if st.button("🗑️ مسح"):
-        st.session_state.history = []
-        st.session_state.last_jackpot = 0
-        st.rerun()
+    if st.button("🗑️ مسح"): st.session_state.history = []; st.session_state.last_jackpot = 0; st.rerun()
 
 # --- شريط التاريخ ---
 if hist:
     st.markdown(f'<div class="last-result-banner">⏮️ الأخير: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
-    timeline_html = '<div class="timeline-container" style="display:flex; overflow-x:auto; gap:5px; margin-bottom:15px;">'
+    timeline_html = '<div style="display:flex; overflow-x:auto; gap:5px; margin-bottom:15px;">'
     for code in reversed(hist[-12:]):
         timeline_html += f'<div style="background:#262730; padding:4px 10px; border-radius:6px; white-space:nowrap; color:#eee; font-size:13px;">{SYMBOLS[code]["name"].split()[0]}</div>'
     timeline_html += '</div>'
     st.markdown(timeline_html, unsafe_allow_html=True)
 
-# --- محرك التوقعات ---
+# --- محرك التوقعات (8 عناصر) ---
 st.subheader("📊 تحليل النمط")
 if total_h >= 30:
     global_counts = {c: hist.count(c) for c in range(1, 9)}
@@ -120,6 +110,25 @@ if total_h >= 30:
     p2 = st.columns(4)
     for i, (code, prob) in enumerate(sorted_probs[4:8]):
         with p2[i]: st.markdown(f'<div class="prob-box">{SYMBOLS[code]["name"].split()[0]}<br><b>ساكن</b></div>', unsafe_allow_html=True)
+
+    # --- القسم الجديد: أفضل الخيارات حسب الفئة ---
+    st.divider()
+    st.write("🎯 **أفضل الخيارات حسب النوع:**")
+    col_veg, col_ani = st.columns(2)
+    
+    # فلترة الخضروات والحيوانات
+    veg_probs = [item for item in sorted_probs if SYMBOLS[item[0]]["type"] == "veg"]
+    ani_probs = [item for item in sorted_probs if SYMBOLS[item[0]]["type"] == "ani"]
+    
+    with col_veg:
+        st.markdown('<div class="category-box"><b>🥬 أقوى خضروات:</b><br>' + 
+                    f'1. {SYMBOLS[veg_probs[0][0]]["name"]}<br>' +
+                    f'2. {SYMBOLS[veg_probs[1][0]]["name"]}</div>', unsafe_allow_html=True)
+    
+    with col_ani:
+        st.markdown('<div class="category-box"><b>🥩 أقوى حيوانات:</b><br>' + 
+                    f'1. {SYMBOLS[ani_probs[0][0]]["name"]}<br>' +
+                    f'2. {SYMBOLS[ani_probs[1][0]]["name"]}</div>', unsafe_allow_html=True)
 else:
     st.info(f"📡 متبقي {30-total_h} جولة للتفعيل.")
 
