@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Heat Radar v65", page_icon="🔥", layout="centered")
+st.set_page_config(page_title="Heat Radar v65.1", page_icon="🔥", layout="centered")
 
 st.markdown("""
     <style>
@@ -10,6 +10,13 @@ st.markdown("""
     .last-result-banner {
         background: #1a1a1a; padding: 10px; border-radius: 10px; border-right: 5px solid #39ff14;
         text-align: center; margin-bottom: 10px; color: #39ff14; font-weight: bold;
+    }
+    .timeline-container {
+        display: flex; gap: 5px; margin-bottom: 15px; padding: 8px;
+        background: #0e1117; border-radius: 8px; overflow-x: auto;
+    }
+    .timeline-item {
+        padding: 4px 10px; background: #262730; border-radius: 6px; font-size: 13px; white-space: nowrap; color: #eee;
     }
     .pulse-card {
         background: #0e1117; border: 1px solid #333; border-radius: 12px;
@@ -47,17 +54,22 @@ with c_reset:
 
 hist = st.session_state.history
 
-# --- شريط النتائج الأخير ---
+# --- شريط النتائج الأخير (Timeline) ---
 if hist:
-    st.markdown(f'<div class="last-result-banner">⏮️ الأخير: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="last-result-banner">⏮️ آخر نتيجة: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
+    
+    # بناء شريط الشريط الزمني
+    timeline_html = '<div class="timeline-container">'
+    for code in reversed(hist[-12:]): # عرض آخر 12 نتيجة
+        timeline_html += f'<div class="timeline-item">{SYMBOLS[code]["name"].split()[0]}</div>'
+    timeline_html += '</div>'
+    st.markdown(timeline_html, unsafe_allow_html=True)
 
 # --- رادار نبض السيرفر (Server Pulse) ---
 if len(hist) >= 10:
     recent_10 = hist[-10:]
-    # حساب العنصر الساخن (الأكثر تكراراً مؤخراً)
     hot_symbol = max(set(recent_10), key=recent_10.count)
     
-    # حساب العنصر المتأخر (أطول فترة غياب)
     gaps = {}
     for c in range(1, 9):
         try:
@@ -70,7 +82,7 @@ if len(hist) >= 10:
     st.markdown(f"""
     <div class="pulse-card">
         🚀 <b>نبض السيرفر:</b><br>
-        • عنصر ساخن حالياً: <span class="hot-text">{SYMBOLS[hot_symbol]['name']}</span> (تكرار عالي)<br>
+        • عنصر ساخن حالياً: <span class="hot-text">{SYMBOLS[hot_symbol]['name']}</span><br>
         • عنصر متأخر جداً: <span class="cold-text">{SYMBOLS[cold_symbol]['name']}</span> (غائب منذ {gaps[cold_symbol]} جولة)
     </div>
     """, unsafe_allow_html=True)
@@ -96,7 +108,7 @@ if len(hist) >= 25:
             is_best = "main-highlight" if i == 0 else ""
             st.markdown(f'<div class="prob-box {is_best}">{SYMBOLS[code]["name"].split()[0]}<br><b>{prob:.0f}%</b></div>', unsafe_allow_html=True)
 else:
-    st.warning(f"📡 متبقي {25-len(hist)} جولة لتفعيل التحليل الكامل.")
+    st.warning(f"📡 متبقي {25-len(hist)} جولة لتفعيل التحليل.")
 
 # --- تسجيل النتائج ---
 st.write("🔘 **سجل النتيجة:**")
