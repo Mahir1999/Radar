@@ -1,9 +1,10 @@
 import streamlit as st
-import time
+import time  # تأكد من وجود هذه المكتبة لتجنب الأخطاء
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Self-Learning Radar v80", page_icon="🧠", layout="centered")
+st.set_page_config(page_title="Self-Learning Radar v81", page_icon="🧠", layout="centered")
 
+# --- تنسيقات واجهة المستخدم ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1rem; padding-bottom: 1rem; }
@@ -32,31 +33,32 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# تعريف الرموز
 SYMBOLS = {
     1: {"name": "🍅 طماطم"}, 2: {"name": "🌽 ذرة"}, 3: {"name": "🥕 جزر"}, 4: {"name": "🫑 فلفل"},
     5: {"name": "🐔 دجاجة"}, 6: {"name": "🐑 خروف"}, 7: {"name": "🐟 سمك"}, 8: {"name": "🦐 روبيان"}, 9: {"name": "💰 جكبوت"}
 }
 
-# تهيئة الجلسة
+# --- تهيئة حالة الجلسة (Session State) ---
 if 'history' not in st.session_state: st.session_state.history = []
 if 'hits' not in st.session_state: st.session_state.hits = 0
 if 'misses' not in st.session_state: st.session_state.misses = 0
 if 'current_preds' not in st.session_state: st.session_state.current_preds = []
 
+# --- دوال المعالجة ---
 def register_result(code):
-    # التحقق من صحة التوقع قبل إضافة النتيجة للتاريخ
+    # التحقق من دقة التوقع السابق قبل الإضافة
     if st.session_state.current_preds:
         if code in st.session_state.current_preds:
             st.session_state.hits += 1
-        else:
-            if code != 9: # لا نحسب الجكبوت كخطأ لأنه خارج التوقعات الثلاثية
-                st.session_state.misses += 1
+        elif code != 9: # لا نحسب الجكبوت كخطأ
+            st.session_state.misses += 1
     st.session_state.history.append(code)
 
 hist = st.session_state.history
 total_h = len(hist)
 
-# --- عدادات الأداء والجولات ---
+# --- واجهة العدادات ---
 st.markdown(f"""
 <div class="stats-grid">
     <div class="stat-box">🔄 الجولة: <b>{total_h}</b></div>
@@ -69,12 +71,18 @@ st.markdown(f"""
 c1, c2 = st.columns(2)
 with c1:
     if st.button("↩️ تراجع"): 
-        if hist: st.session_state.history.pop(); st.rerun()
+        if hist: 
+            st.session_state.history.pop()
+            st.rerun()
 with c2:
     if st.button("🗑️ مسح الكل"): 
-        st.session_state.history = []; st.session_state.hits = 0; st.session_state.misses = 0; st.rerun()
+        st.session_state.history = []
+        st.session_state.hits = 0
+        st.session_state.misses = 0
+        st.session_state.current_preds = []
+        st.rerun()
 
-# --- شريط النتائج ---
+# --- عرض النتائج السابقة ---
 if hist:
     st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
     timeline_html = '<div class="timeline-container">'
@@ -83,49 +91,61 @@ if hist:
     timeline_html += '</div>'
     st.markdown(timeline_html, unsafe_allow_html=True)
 
-# --- محرك التوقع (يعمل من الجولة 1) ---
+# --- محرك التوقعات (التحليل الذكي) ---
+# حساب الفجوات لجميع الرموز
 gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 10)}
-# خوارزمية مرنة: تعدل أوزانها بناءً على دقة الأداء
-weight_recent = 0.7 if st.session_state.hits >= st.session_state.misses else 0.9
-scores = {c: (hist[-20:].count(c)*weight_recent + (gaps[c]*(1-weight_recent))) for c in range(1, 9)}
-top_3_codes = sorted(scores, key=scores.get, reverse=True)[:3]
-st.session_state.current_preds = top_3_codes
 
-# عرض حالة الفهم
-status_msg = "📡 جاري تحليل النمط الأول..."
-if total_h > 15: status_msg = "⚙️ موازنة الخوارزمية..."
-if total_h > 30 and st.session_state.hits > st.session_state.misses: status_msg = "✅ تم فهم خوارزمية السيرفر بنجاح"
+# تحديد التوقعات بناءً على البيانات المتوفرة
+if total_h > 0:
+    # تعديل الوزن بناءً على الأداء (Self-Learning)
+    weight_recent = 0.8 if st.session_state.hits >= st.session_state.misses else 0.6
+    scores = {c: (hist[-20:].count(c) * weight_recent + (gaps[c] * (1-weight_recent))) for c in range(1, 9)}
+    top_3_codes = sorted(scores, key=scores.get, reverse=True)[:3]
+    st.session_state.current_preds = top_3_codes
+    
+    # رسالة حالة الفهم
+    status_msg = "📡 جاري تحليل النمط..."
+    if total_h > 15: status_msg = "⚙️ ضبط خوارزمية السيرفر..."
+    if total_h > 30 and st.session_state.hits > st.session_state.misses: status_msg = "✅ تم فهم خوارزمية السيرفر بنجاح"
 
-st.markdown(f"""
-<div class="next-hit-card">
-    <div style="color:#39ff14; font-size:12px; font-weight:bold;">{status_msg}</div>
-    <div class="triple-box">
-        <div class="triple-item">{SYMBOLS[top_3_codes[0]]["name"]}</div>
-        <div class="triple-item">{SYMBOLS[top_3_codes[1]]["name"]}</div>
-        <div class="triple-item">{SYMBOLS[top_3_codes[2]]["name"]}</div>
+    st.markdown(f"""
+    <div class="next-hit-card">
+        <div style="color:#39ff14; font-size:12px; font-weight:bold;">{status_msg}</div>
+        <div class="triple-box">
+            <div class="triple-item">{SYMBOLS[top_3_codes[0]]["name"]}</div>
+            <div class="triple-item">{SYMBOLS[top_3_codes[1]]["name"]}</div>
+            <div class="triple-item">{SYMBOLS[top_3_codes[2]]["name"]}</div>
+        </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+else:
+    st.info("💡 سجل الضربة الأولى لبدء التحليل المباشر.")
 
-# --- رادار الفجوات ---
+# --- رادار الفجوات الرقمي ---
 st.subheader("📊 رادار التحليل الرقمي")
 global_counts = {c: hist.count(c) for c in range(1, 9)}
-combined_scores = {c: (global_counts.get(c, 0)*0.2 + (hist[-25:].count(c)*0.8)) for c in range(1, 9)}
-sorted_probs = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
+recent_counts = {c: hist[-25:].count(c) for c in range(1, 9)}
+combined_scores = {c: (global_counts.get(c, 0)*0.2 + (recent_counts.get(c, 0)*0.8)) for c in range(1, 9)}
+sorted_items = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
 
 p1 = st.columns(4)
-for i, (code, prob) in enumerate(sorted_probs[:4]):
+for i, (code, prob) in enumerate(sorted_items[:4]):
     with p1[i]: st.markdown(f'<div class="prob-box main-highlight"><span class="gap-counter">{gaps[code]}</span>{SYMBOLS[code]["name"].split()[0]}<br><b>نشط</b></div>', unsafe_allow_html=True)
 
 p2 = st.columns(4)
-for i, (code, prob) in enumerate(sorted_probs[4:8]):
+for i, (code, prob) in enumerate(sorted_items[4:8]):
     with p2[i]: st.markdown(f'<div class="prob-box"><span class="gap-counter">{gaps[code]}</span>{SYMBOLS[code]["name"].split()[0]}<br><b>ساكن</b></div>', unsafe_allow_html=True)
 
-# --- تسجيل النتائج ---
+# --- أزرار الإدخال ---
 st.write("🔘 **سجل النتيجة:**")
 r1 = st.columns(5)
 for i, code in enumerate([5, 7, 6, 8, 9]):
-    if r1[i].button(SYMBOLS[code]["name"].split()[0], key=f"r_{code}"): register_result(code); st.rerun()
+    if r1[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): 
+        register_result(code)
+        st.rerun()
+
 r2 = st.columns(4)
 for i, code in enumerate([1, 2, 3, 4]):
-    if r2[i].button(SYMBOLS[code]["name"].split()[0], key=f"r_{code}"): register_result(code); st.rerun()
+    if r2[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): 
+        register_result(code)
+        st.rerun()
