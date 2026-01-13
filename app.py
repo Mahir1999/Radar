@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v92.0 - Original Layout", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="Greedy AI v93.0 - Insurance", page_icon="🛡️", layout="centered")
 
 st.markdown("""
     <style>
@@ -10,27 +10,26 @@ st.markdown("""
     .last-result-banner { background: #1a1a1a; padding: 10px; border-radius: 10px; border-right: 5px solid #39ff14; text-align: center; margin-bottom: 10px; color: #39ff14; font-weight: bold; font-size: 18px; }
     .timeline-container { display: flex; gap: 5px; margin-bottom: 15px; padding: 8px; background: #0e1117; border-radius: 8px; overflow-x: auto; }
     .timeline-item { padding: 4px 10px; background: #262730; border-radius: 6px; font-size: 13px; white-space: nowrap; color: #eee; }
-    .next-hit-card { background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border: 2px solid #39ff14; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
+    .next-hit-card { background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border: 2px solid #39ff14; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; }
+    .insurance-card { background: linear-gradient(135deg, #001a33 0%, #000 100%); border: 2px solid #00aaff; padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
     .quad-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .quad-item { background: #002200; border: 1px solid #39ff14; padding: 8px; border-radius: 8px; color: white; font-weight: bold; font-size: 14px;}
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .stat-box { background: #111; padding: 8px; border-radius: 10px; text-align: center; border: 1px solid #333; font-size: 12px; }
     .omni-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .metric-card { background: #0a0a0a; border: 1px dashed #444; padding: 10px; border-radius: 10px; text-align: center; font-size: 11px; }
-    .wave-push { color: #39ff14; font-weight: bold; }
-    .advisor-box { background: #330000; border: 1px solid #ff4b4b; color: #ff4b4b; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 13px; }
     .compact-frame { border: 2px solid #444; padding: 15px; border-radius: 15px; background: #0e1117; margin-top: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-SYMBOLS = {1: {"name": "🍅 طماطم"}, 2: {"name": "🌽 ذرة"}, 3: {"name": "🥕 جزر"}, 4: {"name": "🫑 فلفل"},
-           5: {"name": "🐔 دجاجة"}, 6: {"name": "🐑 خروف"}, 7: {"name": "🐟 سمك"}, 8: {"name": "🦐 روبيان"}, 9: {"name": "💰 جكبوت"}}
+SYMBOLS = {1: "🍅 طماطم", 2: "🌽 ذرة", 3: "🥕 جزر", 4: "🫑 فلفل", 5: "🐔 دجاجة", 6: "🐑 خروف", 7: "🐟 سمك", 8: "🦐 روبيان", 9: "💰 جكبوت"}
+VEGGIES = [1, 2, 3, 4]
+MEATS = [5, 6, 7, 8]
 
 if 'history' not in st.session_state: st.session_state.history = []
 if 'hits' not in st.session_state: st.session_state.hits = 0
 if 'misses' not in st.session_state: st.session_state.misses = 0
 if 'consecutive_misses' not in st.session_state: st.session_state.consecutive_misses = 0
-if 'patterns_found' not in st.session_state: st.session_state.patterns_found = 0
 if 'current_preds' not in st.session_state: st.session_state.current_preds = []
 
 def register_result(code):
@@ -41,17 +40,12 @@ def register_result(code):
         elif code != 9:
             st.session_state.misses += 1
             st.session_state.consecutive_misses += 1
-            if st.session_state.consecutive_misses % 2 == 0: st.session_state.patterns_found += 1
     st.session_state.history.append(code)
 
 hist = st.session_state.history
 total_h = len(hist)
 
-# --- 1. مستشار الانسحاب (في الأعلى للتحذير) ---
-if total_h > 20 and st.session_state.consecutive_misses >= 3 and (st.session_state.hits / total_h) > 0.5:
-    st.markdown('<div class="advisor-box">🚨 مستشار الانسحاب: انتبه! السيرفر بدأ مرحلة استرداد.</div>', unsafe_allow_html=True)
-
-# --- 2. العدادات الرئيسية (المكان الأصلي) ---
+# --- 1. العدادات ---
 st.markdown(f"""
 <div class="stats-grid">
     <div class="stat-box">🔄 الجولة: <b>{total_h}</b></div>
@@ -60,63 +54,63 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 3. رادار الموجة وميزان السيرفر (المكان الأصلي) ---
+# --- 2. رادار الموجة والميزان ---
 wave_s = "امتصاص ⏳"
-bank_p = "متوازن"
-if total_h > 10:
-    if st.session_state.consecutive_misses == 0: wave_s = "دفع (FIRE) 🔥"
-    if st.session_state.misses > st.session_state.hits + 5: bank_p = "ممتلئ (انفجار)"
+if total_h > 10 and st.session_state.consecutive_misses == 0: wave_s = "دفع (FIRE) 🔥"
+st.markdown(f'<div class="omni-metrics"><div class="metric-card">🌊 الموجة: <span style="color:#39ff14">{wave_s}</span></div><div class="metric-card">⚖️ ضغط السيرفر: <b>{"ممتلئ" if st.session_state.misses > st.session_state.hits else "متوازن"}</b></div></div>', unsafe_allow_html=True)
 
-st.markdown(f"""
-<div class="omni-metrics">
-    <div class="metric-card">🌊 الموجة: <span class="wave-push">{wave_s}</span></div>
-    <div class="metric-card">⚖️ ضغط السيرفر: <b>{bank_p}</b></div>
-</div>
-""", unsafe_allow_html=True)
-
-# --- 4. محرك التوقع v89 الأصلي ---
+# --- 3. محرك التوقع المتوازن v93 ---
 if total_h > 0:
-    gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 10)}
-    scores = {c: (hist[-15:].count(c) * 0.7 + hist.count(c) * 0.3) for c in range(1, 9)}
+    gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 9)}
+    scores = {c: (hist[-15:].count(c) * 0.7 + (gaps[c] * 0.3)) for c in range(1, 9)}
+    
+    # الـ 4 الأساسية (النمط الطاغي - الخضار غالباً)
     top_4 = sorted(scores, key=scores.get, reverse=True)[:4]
-    st.session_state.current_preds = top_4
+    
+    # تحديد "درع التأمين" (الرمز الخامس)
+    # إذا كانت الـ 4 الأساسية كلها خضار، نختار أقوى "لحم" غائب
+    is_veggie_heavy = all(c in VEGGIES for c in top_4)
+    if is_veggie_heavy:
+        insurance_slot = sorted(MEATS, key=lambda x: gaps[x], reverse=True)[0]
+    else:
+        insurance_slot = sorted(scores, key=scores.get, reverse=True)[4] # الرمز الخامس الطبيعي
+    
+    st.session_state.current_preds = top_4 + [insurance_slot]
     
     st.markdown(f"""
     <div class="next-hit-card">
-        <div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي (التوقع الحالي)</div>
+        <div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي (النمط الحالي)</div>
         <div class="quad-box">
-            {"".join([f'<div class="quad-item">{"⏳ " if gaps[c] > 15 else ""}{SYMBOLS[c]["name"]}</div>' for c in top_4])}
+            {"".join([f'<div class="quad-item">{"⏳ " if gaps[c] > 15 else ""}{SYMBOLS[c].split()[0]}</div>' for c in top_4])}
         </div>
+    </div>
+    <div class="insurance-card">
+        <div style="color:#00aaff; font-size:12px; font-weight:bold;">🛡️ درع التأمين (صائد اللحوم والغائبين)</div>
+        <div style="color:white; font-size:20px; font-weight:bold; margin-top:5px;">{SYMBOLS[insurance_slot]}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- شريط الجكبوت والأنماط ---
-gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
-st.markdown(f'<p style="text-align:center; font-size:11px; color:#ff0055;">💰 رادار الجكبوت: غائب منذ {gap_9} جولة | أنماط: {st.session_state.patterns_found}</p>', unsafe_allow_html=True)
-
-# --- 5. شريط النتائج التاريخي ---
+# --- شريط النتائج ---
 if hist:
-    st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]].split()[0]}</div>', unsafe_allow_html=True)
     timeline_html = '<div class="timeline-container">'
-    for code in reversed(hist[-12:]): timeline_html += f'<div class="timeline-item">{SYMBOLS[code]["name"].split()[0]}</div>'
+    for code in reversed(hist[-12:]): timeline_html += f'<div class="timeline-item">{SYMBOLS[code].split()[0]}</div>'
     timeline_html += '</div>'
     st.markdown(timeline_html, unsafe_allow_html=True)
 
-# --- 6. سجل النتيجة (داخل الإطار الموحد في الأسفل) ---
+# --- 4. سجل النتيجة (داخل الإطار الموحد) ---
 st.markdown('<div class="compact-frame">', unsafe_allow_html=True)
 st.write("<p style='text-align:center; font-size:12px; font-weight:bold; margin-bottom:10px;'>🔘 سجل النتيجة (إطار موفر للمساحة)</p>", unsafe_allow_html=True)
-row1 = st.columns(5)
-row2 = st.columns(4)
+r1 = st.columns(5); r2 = st.columns(4)
 for i, code in enumerate([5, 7, 6, 8, 9]):
-    if row1[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
+    if r1[i].button(SYMBOLS[code].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
 for i, code in enumerate([1, 2, 3, 4]):
-    if row2[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
+    if r2[i].button(SYMBOLS[code].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- أزرار التحكم ---
 c1, c2 = st.columns(2)
 if c1.button("↩️ تراجع"):
     if hist: st.session_state.history.pop(); st.rerun()
-if c2.button("🗑️ مسح الكل"):
+if c2.button("🗑️ مسح"):
     for k in list(st.session_state.keys()): del st.session_state[k]
     st.rerun()
