@@ -1,12 +1,12 @@
 import streamlit as st
 
-# --- إعدادات الصفحة واستقرار النظام ---
-st.set_page_config(page_title="Greedy AI v91.0 - Restoration", page_icon="🔮", layout="centered")
+# --- إعدادات الصفحة ---
+st.set_page_config(page_title="Greedy AI v92.0 - Original Layout", page_icon="🔮", layout="centered")
 
 st.markdown("""
     <style>
     .block-container { padding-top: 1rem; padding-bottom: 1rem; }
-    .stButton>button { width: 100%; height: 45px; font-weight: bold; border-radius: 10px; }
+    .stButton>button { width: 100%; height: 48px; font-weight: bold; border-radius: 10px; }
     .last-result-banner { background: #1a1a1a; padding: 10px; border-radius: 10px; border-right: 5px solid #39ff14; text-align: center; margin-bottom: 10px; color: #39ff14; font-weight: bold; font-size: 18px; }
     .timeline-container { display: flex; gap: 5px; margin-bottom: 15px; padding: 8px; background: #0e1117; border-radius: 8px; overflow-x: auto; }
     .timeline-item { padding: 4px 10px; background: #262730; border-radius: 6px; font-size: 13px; white-space: nowrap; color: #eee; }
@@ -19,8 +19,7 @@ st.markdown("""
     .metric-card { background: #0a0a0a; border: 1px dashed #444; padding: 10px; border-radius: 10px; text-align: center; font-size: 11px; }
     .wave-push { color: #39ff14; font-weight: bold; }
     .advisor-box { background: #330000; border: 1px solid #ff4b4b; color: #ff4b4b; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 13px; }
-    /* إطار الأزرار الموحد */
-    .compact-box { background: #111; border: 1px solid #444; padding: 12px; border-radius: 15px; margin-top: 10px; }
+    .compact-frame { border: 2px solid #444; padding: 15px; border-radius: 15px; background: #0e1117; margin-top: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -48,22 +47,20 @@ def register_result(code):
 hist = st.session_state.history
 total_h = len(hist)
 
-# --- 1. مستشار الانسحاب (الميزة الجديدة) ---
-if total_h > 20 and st.session_state.consecutive_misses >= 3:
-    win_rate = (st.session_state.hits / total_h) * 100
-    if win_rate > 50:
-        st.markdown('<div class="advisor-box">🚨 مستشار الانسحاب: حافظ على أرباحك، السيرفر في وضع استرداد!</div>', unsafe_allow_html=True)
+# --- 1. مستشار الانسحاب (في الأعلى للتحذير) ---
+if total_h > 20 and st.session_state.consecutive_misses >= 3 and (st.session_state.hits / total_h) > 0.5:
+    st.markdown('<div class="advisor-box">🚨 مستشار الانسحاب: انتبه! السيرفر بدأ مرحلة استرداد.</div>', unsafe_allow_html=True)
 
-# --- 2. العدادات (الموقع الأصلي) ---
+# --- 2. العدادات الرئيسية (المكان الأصلي) ---
 st.markdown(f"""
 <div class="stats-grid">
     <div class="stat-box">🔄 الجولة: <b>{total_h}</b></div>
     <div class="stat-box" style="color:#39ff14">✅ فوز: <b>{st.session_state.hits}</b></div>
     <div class="stat-box" style="color:#ff4b4b">❌ خطأ: <b>{st.session_state.misses}</b></div>
 </div>
-""")
+""", unsafe_allow_html=True)
 
-# --- 3. رادار الموجة والميزان (الموقع الأصلي) ---
+# --- 3. رادار الموجة وميزان السيرفر (المكان الأصلي) ---
 wave_s = "امتصاص ⏳"
 bank_p = "متوازن"
 if total_h > 10:
@@ -77,7 +74,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 4. محرك التوقع والبصمة الزمنية (الموقع الأصلي) ---
+# --- 4. محرك التوقع v89 الأصلي ---
 if total_h > 0:
     gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 10)}
     scores = {c: (hist[-15:].count(c) * 0.7 + hist.count(c) * 0.3) for c in range(1, 9)}
@@ -86,26 +83,34 @@ if total_h > 0:
     
     st.markdown(f"""
     <div class="next-hit-card">
-        <div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي (Omni-Prediction)</div>
+        <div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي (التوقع الحالي)</div>
         <div class="quad-box">
             {"".join([f'<div class="quad-item">{"⏳ " if gaps[c] > 15 else ""}{SYMBOLS[c]["name"]}</div>' for c in top_4])}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- شريط الجكبوت ---
+# --- شريط الجكبوت والأنماط ---
 gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
 st.markdown(f'<p style="text-align:center; font-size:11px; color:#ff0055;">💰 رادار الجكبوت: غائب منذ {gap_9} جولة | أنماط: {st.session_state.patterns_found}</p>', unsafe_allow_html=True)
 
-# --- 5. سجل النتيجة (إطار موحد ومدمج - طلبك الجديد) ---
-st.markdown('<div class="compact-box">', unsafe_allow_html=True)
-st.write("<p style='text-align:center; font-size:12px; margin:0;'>🔘 سجل النتيجة</p>", unsafe_allow_html=True)
-r1 = st.columns(5)
-r2 = st.columns(4)
+# --- 5. شريط النتائج التاريخي ---
+if hist:
+    st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
+    timeline_html = '<div class="timeline-container">'
+    for code in reversed(hist[-12:]): timeline_html += f'<div class="timeline-item">{SYMBOLS[code]["name"].split()[0]}</div>'
+    timeline_html += '</div>'
+    st.markdown(timeline_html, unsafe_allow_html=True)
+
+# --- 6. سجل النتيجة (داخل الإطار الموحد في الأسفل) ---
+st.markdown('<div class="compact-frame">', unsafe_allow_html=True)
+st.write("<p style='text-align:center; font-size:12px; font-weight:bold; margin-bottom:10px;'>🔘 سجل النتيجة (إطار موفر للمساحة)</p>", unsafe_allow_html=True)
+row1 = st.columns(5)
+row2 = st.columns(4)
 for i, code in enumerate([5, 7, 6, 8, 9]):
-    if r1[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
+    if row1[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
 for i, code in enumerate([1, 2, 3, 4]):
-    if r2[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
+    if row2[i].button(SYMBOLS[code]["name"].split()[0], key=f"btn_{code}"): register_result(code); st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 
 # --- أزرار التحكم ---
@@ -115,6 +120,3 @@ if c1.button("↩️ تراجع"):
 if c2.button("🗑️ مسح الكل"):
     for k in list(st.session_state.keys()): del st.session_state[k]
     st.rerun()
-
-if hist:
-    st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]]["name"]}</div>', unsafe_allow_html=True)
