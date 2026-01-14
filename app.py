@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v94.3", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="Greedy AI v94.4", page_icon="🛡️", layout="centered")
 
 st.markdown("""
     <style>
@@ -13,10 +13,13 @@ st.markdown("""
     .quad-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
     .quad-item { background: #002200; border: 1px solid #39ff14; padding: 6px; border-radius: 8px; color: white; font-weight: bold; font-size: 13px; }
     
-    /* تنسيق الصف المدمج (تأمين + نمط) */
-    .flex-container { display: flex; gap: 10px; margin-bottom: 10px; }
-    .insurance-box { flex: 1; background: #001a33; border: 2px solid #00aaff; padding: 8px; border-radius: 12px; text-align: center; }
-    .pattern-box { flex: 1.5; background: #111; border: 2px solid #444; padding: 8px; border-radius: 12px; text-align: center; }
+    /* تنسيق الصف المدمج الثلاثي (تأمين + الأخيرة + نمط) */
+    .info-row { display: flex; gap: 8px; margin-bottom: 15px; align-items: stretch; }
+    .info-box { flex: 1; padding: 8px; border-radius: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+    
+    .insurance-style { background: #001a33; border: 1px solid #00aaff; }
+    .last-style { background: #1a1a1a; border: 1px solid #39ff14; }
+    .pattern-style { background: #111; border: 1px solid #555; }
     
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .stat-box { background: #111; padding: 8px; border-radius: 10px; text-align: center; border: 1px solid #333; font-size: 12px; }
@@ -47,7 +50,7 @@ def register_result(code):
 hist = st.session_state.history
 total_h = len(hist)
 
-# --- 1. العدادات ---
+# --- 1. العدادات العلوية ---
 st.markdown(f'<div class="stats-grid"><div class="stat-box">🔄 الجولة: {total_h}</div><div class="stat-box" style="color:#39ff14">✅ فوز: {st.session_state.hits}</div><div class="stat-box" style="color:#ff4b4b">❌ خطأ: {st.session_state.misses}</div></div>', unsafe_allow_html=True)
 
 # --- 2. المربع الذهبي ---
@@ -60,31 +63,35 @@ if total_h > 0:
     
     st.markdown(f'<div class="next-hit-card"><div style="color:#39ff14; font-size:11px; font-weight:bold;">🎯 المربع الذهبي</div><div class="quad-box">{"".join([f'<div class="quad-item">{SYMBOLS[c].split()[0]}</div>' for c in top_4])}</div></div>', unsafe_allow_html=True)
 
-    # --- 3. الصف المدمج (درع التأمين + شريط النمط) ---
+    # --- 3. الصف المدمج (تأمين + الأخيرة + نمط) ---
     p_status = "ثابت ✅" if st.session_state.consecutive_misses < 2 else "متغير ⚠️"
     p_color = "#39ff14" if p_status == "ثابت ✅" else "#ff4b4b"
-    gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
+    last_res = SYMBOLS[hist[-1]].split()[0] if hist else "---"
 
     st.markdown(f"""
-    <div class="flex-container">
-        <div class="insurance-box">
-            <div style="color:#00aaff; font-size:10px; font-weight:bold;">🛡️ تأمين</div>
-            <div style="color:white; font-size:18px; font-weight:bold;">{SYMBOLS[insurance_slot].split()[0]}</div>
+    <div class="info-row">
+        <div class="info-box insurance-style">
+            <div style="color:#00aaff; font-size:9px; font-weight:bold;">🛡️ تأمين</div>
+            <div style="color:white; font-size:16px;">{SYMBOLS[insurance_slot].split()[0]}</div>
         </div>
-        <div class="pattern-box">
-            <div style="color:{p_color}; font-size:12px; font-weight:bold;">النمط: {p_status}</div>
-            <div style="color:#888; font-size:10px;">🧠 {st.session_state.patterns_found} | 💰 {gap_9}</div>
+        <div class="info-box last-style">
+            <div style="color:#39ff14; font-size:9px; font-weight:bold;">⏮️ الأخيرة</div>
+            <div style="color:white; font-size:16px;">{last_res}</div>
+        </div>
+        <div class="info-box pattern-style">
+            <div style="color:{p_color}; font-size:9px; font-weight:bold;">📉 النمط</div>
+            <div style="color:white; font-size:12px;">{p_status}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 4. سجل النتائج (بدون إطار) ---
+# --- 4. سجل النتائج ---
 r1, r2 = st.columns(5), st.columns(4)
 for i, c in enumerate([5, 7, 6, 8, 9]):
     if r1[i].button(SYMBOLS[c].split()[0], key=f"btn_{c}"): register_result(c); st.rerun()
 for i, c in enumerate([1, 2, 3, 4]):
     if r2[i].button(SYMBOLS[c].split()[0], key=f"btn_{c}"): register_result(c); st.rerun()
 
-# --- 5. أدوات التحكم ---
+# --- 5. التحكم ---
 if st.button("↩️ تراجع"):
     if hist: st.session_state.history.pop(); st.rerun()
