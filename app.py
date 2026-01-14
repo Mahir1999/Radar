@@ -1,43 +1,41 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v95.0 - Unified", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="Greedy AI v96.0 - Icon Board", page_icon="🔮", layout="centered")
 
 st.markdown("""
     <style>
     .block-container { padding-top: 1rem; padding-bottom: 1rem; }
-    /* تصميم الأزرار داخل المربع */
+    
+    /* تصميم الأزرار كأيقونات داخل إطار موحد */
     .stButton>button { 
-        width: 100%; 
-        height: 45px; 
-        font-weight: bold; 
-        border-radius: 8px; 
-        background: #002200; 
-        border: 1px solid #39ff14; 
-        color: white;
+        border: none !important;
+        background: transparent !important;
+        color: white !important;
+        font-size: 24px !important;
+        height: 60px !important;
+        transition: transform 0.2s;
     }
-    .stButton>button:hover { border: 2px solid #39ff14; color: #39ff14; }
+    .stButton>button:hover { 
+        transform: scale(1.2);
+        background: rgba(57, 255, 20, 0.1) !important;
+    }
     
-    .last-result-banner { background: #1a1a1a; padding: 10px; border-radius: 10px; border-right: 5px solid #39ff14; text-align: center; margin-bottom: 10px; color: #39ff14; font-weight: bold; font-size: 18px; }
-    .timeline-container { display: flex; gap: 5px; margin-bottom: 15px; padding: 8px; background: #0e1117; border-radius: 8px; overflow-x: auto; }
-    .timeline-item { padding: 4px 10px; background: #262730; border-radius: 6px; font-size: 13px; white-space: nowrap; color: #eee; }
-    
-    /* المربع الذهبي (التوقعات) */
-    .next-hit-card { background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border: 2px solid #39ff14; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; }
-    
-    /* درع التأمين */
-    .insurance-card { background: linear-gradient(135deg, #001a33 0%, #000 100%); border: 2px solid #00aaff; padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
-    
-    /* مربع التحكم الموحد (مطابق للمربع الذهبي) */
-    .unified-control-box { 
+    /* إطار اللوحة الموحد - مطابق للمربع الذهبي */
+    .unified-icon-board { 
         background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); 
         border: 2px solid #39ff14; 
-        padding: 20px; 
+        padding: 15px; 
         border-radius: 15px; 
         text-align: center; 
         margin-top: 15px;
     }
-    
+
+    .last-result-banner { background: #1a1a1a; padding: 10px; border-radius: 10px; border-right: 5px solid #39ff14; text-align: center; margin-bottom: 10px; color: #39ff14; font-weight: bold; font-size: 18px; }
+    .timeline-container { display: flex; gap: 5px; margin-bottom: 15px; padding: 8px; background: #0e1117; border-radius: 8px; overflow-x: auto; }
+    .timeline-item { padding: 4px 10px; background: #262730; border-radius: 6px; font-size: 13px; white-space: nowrap; color: #eee; }
+    .next-hit-card { background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border: 2px solid #39ff14; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; }
+    .insurance-card { background: linear-gradient(135deg, #001a33 0%, #000 100%); border: 2px solid #00aaff; padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
     .quad-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .quad-item { background: #002200; border: 1px solid #39ff14; padding: 8px; border-radius: 8px; color: white; font-weight: bold; font-size: 14px;}
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
@@ -48,7 +46,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-SYMBOLS = {1: "🍅 طماطم", 2: "🌽 ذرة", 3: "🥕 جزر", 4: "🫑 فلفل", 5: "🐔 دجاجة", 6: "🐑 خروف", 7: "🐟 سمك", 8: "🦐 روبيان", 9: "💰 جكبوت"}
+SYMBOLS = {1: "🍅", 2: "🌽", 3: "🥕", 4: "🫑", 5: "🐔", 6: "🐑", 7: "🐟", 8: "🦐", 9: "💰"}
 VEGGIES, MEATS = [1, 2, 3, 4], [5, 6, 7, 8]
 
 if 'history' not in st.session_state: st.session_state.history = []
@@ -74,14 +72,14 @@ total_h = len(hist)
 
 # --- مستشار الانسحاب ---
 if total_h > 20 and st.session_state.consecutive_misses >= 3 and (st.session_state.hits/total_h) > 0.5:
-    st.error("🚨 مستشار الانسحاب: حافظ على أرباحك، السيرفر في وضع استرداد!")
+    st.error("🚨 مستشار الانسحاب: حافظ على أرباحك!")
 
 # --- 1. العدادات ---
 st.markdown(f"""
 <div class="stats-grid">
-    <div class="stat-box">🔄 الجولة: <b>{total_h}</b></div>
-    <div class="stat-box" style="color:#39ff14">✅ فوز: <b>{st.session_state.hits}</b></div>
-    <div class="stat-box" style="color:#ff4b4b">❌ خطأ: <b>{st.session_state.misses}</b></div>
+    <div class="stat-box">🔄 الجولة: {total_h}</div>
+    <div class="stat-box" style="color:#39ff14">✅ فوز: {st.session_state.hits}</div>
+    <div class="stat-box" style="color:#ff4b4b">❌ خطأ: {st.session_state.misses}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -104,11 +102,11 @@ if total_h > 0:
     st.markdown(f"""
     <div class="next-hit-card">
         <div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي</div>
-        <div class="quad-box">{"".join([f'<div class="quad-item">{"⏳ " if gaps[c] > 15 else ""}{SYMBOLS[c].split()[0]}</div>' for c in top_4])}</div>
+        <div class="quad-box">{"".join([f'<div class="quad-item">{"⏳ " if gaps[c] > 15 else ""}{SYMBOLS[c]}</div>' for c in top_4])}</div>
     </div>
     <div class="insurance-card">
         <div style="color:#00aaff; font-size:12px; font-weight:bold;">🛡️ درع التأمين</div>
-        <div style="color:white; font-size:20px; font-weight:bold;">{SYMBOLS[insurance_slot].split()[0]}</div>
+        <div style="font-size:24px; margin-top:5px;">{SYMBOLS[insurance_slot]}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -116,27 +114,27 @@ if total_h > 0:
 gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
 p_status = "ثابت ✅" if st.session_state.consecutive_misses < 2 else "متغير ⚠️"
 p_bg = "#003300" if p_status == "ثابت ✅" else "#331a00"
-st.markdown(f'<div style="text-align:center; font-size:11px; margin-bottom:10px;">💰 جكبوت: {gap_9} | 🧠 الأنماط: <b>{st.session_state.patterns_found}</b> | <span class="pattern-pulse" style="background:{p_bg}; color:white;">الحالة: {p_status}</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="text-align:center; font-size:11px; margin-bottom:10px;">💰 جكبوت: {gap_9} | 🧠 الأنماط: {st.session_state.patterns_found} | <span class="pattern-pulse" style="background:{p_bg}; color:white;">الحالة: {p_status}</span></div>', unsafe_allow_html=True)
 
 # --- 5. شريط النتائج التاريخي ---
 if hist:
-    st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]].split()[0]}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]]}</div>', unsafe_allow_html=True)
 
-# --- 6. مربع التحكم الموحد (تصميم مطابق للمربع الذهبي) ---
-st.markdown('<div class="unified-control-box">', unsafe_allow_html=True)
-st.write("<div style='color:#39ff14; font-size:12px; font-weight:bold; margin-bottom:10px;'>🔘 لوحة تسجيل النتيجة</div>", unsafe_allow_html=True)
+# --- 6. لوحة الأيقونات الموحدة (التصميم المطلوب) ---
+st.markdown('<div class="unified-icon-board">', unsafe_allow_html=True)
+st.write("<div style='color:#39ff14; font-size:12px; font-weight:bold; margin-bottom:5px;'>🔘 سجل النتيجة (لوحة أيقونات)</div>", unsafe_allow_html=True)
 r1 = st.columns(5)
 r2 = st.columns(4)
 for i, c in enumerate([5, 7, 6, 8, 9]):
-    if r1[i].button(SYMBOLS[c].split()[0], key=f"btn_{c}"): register_result(c); st.rerun()
+    if r1[i].button(SYMBOLS[c], key=f"btn_{c}"): register_result(c); st.rerun()
 for i, c in enumerate([1, 2, 3, 4]):
-    if r2[i].button(SYMBOLS[c].split()[0], key=f"btn_{c}"): register_result(c); st.rerun()
+    if r2[i].button(SYMBOLS[c], key=f"btn_{c}"): register_result(c); st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 
 # --- أزرار الإدارة السفلى ---
 c1, c2 = st.columns(2)
 if c1.button("↩️ تراجع"):
     if hist: st.session_state.history.pop(); st.rerun()
-if c2.button("🗑️ مسح الجلسة"):
+if c2.button("🗑️ مسح"):
     for k in list(st.session_state.keys()): del st.session_state[k]
     st.rerun()
