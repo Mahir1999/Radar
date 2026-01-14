@@ -1,43 +1,49 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v96.0 - Icon Board", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="Greedy AI v97.0 - FlexBoard", page_icon="🔮", layout="centered")
 
 st.markdown("""
     <style>
-    .block-container { padding-top: 1rem; padding-bottom: 1rem; }
+    /* منع انهيار العناصر وجعلها في إطار واحد */
+    .unified-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #1a1a1a 0%, #000 100%);
+        border: 2px solid #39ff14;
+        padding: 15px;
+        border-radius: 15px;
+        margin-top: 10px;
+    }
     
-    /* تصميم الأزرار كأيقونات داخل إطار موحد */
-    .stButton>button { 
-        border: none !important;
-        background: transparent !important;
+    /* إلغاء تصميم أزرار ستريمليت الافتراضي */
+    div.stButton > button {
+        background-color: #002200 !important;
         color: white !important;
-        font-size: 24px !important;
+        border: 1px solid #39ff14 !important;
+        border-radius: 10px !important;
+        width: 60px !important;
         height: 60px !important;
-        transition: transform 0.2s;
-    }
-    .stButton>button:hover { 
-        transform: scale(1.2);
-        background: rgba(57, 255, 20, 0.1) !important;
+        font-size: 24px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.3s;
     }
     
-    /* إطار اللوحة الموحد - مطابق للمربع الذهبي */
-    .unified-icon-board { 
-        background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); 
-        border: 2px solid #39ff14; 
-        padding: 15px; 
-        border-radius: 15px; 
-        text-align: center; 
-        margin-top: 15px;
+    div.stButton > button:hover {
+        transform: scale(1.1);
+        border-color: #ffffff !important;
+        box-shadow: 0 0 10px #39ff14;
     }
 
     .last-result-banner { background: #1a1a1a; padding: 10px; border-radius: 10px; border-right: 5px solid #39ff14; text-align: center; margin-bottom: 10px; color: #39ff14; font-weight: bold; font-size: 18px; }
-    .timeline-container { display: flex; gap: 5px; margin-bottom: 15px; padding: 8px; background: #0e1117; border-radius: 8px; overflow-x: auto; }
-    .timeline-item { padding: 4px 10px; background: #262730; border-radius: 6px; font-size: 13px; white-space: nowrap; color: #eee; }
     .next-hit-card { background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border: 2px solid #39ff14; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 10px; }
     .insurance-card { background: linear-gradient(135deg, #001a33 0%, #000 100%); border: 2px solid #00aaff; padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 15px; }
     .quad-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .quad-item { background: #002200; border: 1px solid #39ff14; padding: 8px; border-radius: 8px; color: white; font-weight: bold; font-size: 14px;}
+    .quad-item { background: #002200; border: 1px solid #39ff14; padding: 8px; border-radius: 8px; color: white; font-weight: bold; }
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .stat-box { background: #111; padding: 8px; border-radius: 10px; text-align: center; border: 1px solid #333; font-size: 12px; }
     .omni-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -70,26 +76,11 @@ def register_result(code):
 hist = st.session_state.history
 total_h = len(hist)
 
-# --- مستشار الانسحاب ---
-if total_h > 20 and st.session_state.consecutive_misses >= 3 and (st.session_state.hits/total_h) > 0.5:
-    st.error("🚨 مستشار الانسحاب: حافظ على أرباحك!")
-
 # --- 1. العدادات ---
-st.markdown(f"""
-<div class="stats-grid">
-    <div class="stat-box">🔄 الجولة: {total_h}</div>
-    <div class="stat-box" style="color:#39ff14">✅ فوز: {st.session_state.hits}</div>
-    <div class="stat-box" style="color:#ff4b4b">❌ خطأ: {st.session_state.misses}</div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div class="stats-grid"><div class="stat-box">🔄 الجولة: {total_h}</div><div class="stat-box" style="color:#39ff14">✅ فوز: {st.session_state.hits}</div><div class="stat-box" style="color:#ff4b4b">❌ خطأ: {st.session_state.misses}</div></div>', unsafe_allow_html=True)
 
 # --- 2. رادار الموجة والميزان ---
-st.markdown(f"""
-<div class="omni-metrics">
-    <div class="metric-card">🌊 الموجة: <span style="color:#39ff14">{"FIRE 🔥" if st.session_state.consecutive_misses==0 else "امتصاص"}</span></div>
-    <div class="metric-card">⚖️ ضغط السيرفر: <b>{"ممتلئ" if st.session_state.misses > st.session_state.hits else "متوازن"}</b></div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div class="omni-metrics"><div class="metric-card">🌊 الموجة: <span style="color:#39ff14">{"FIRE 🔥" if st.session_state.consecutive_misses==0 else "امتصاص"}</span></div><div class="metric-card">⚖️ ضغط السيرفر: <b>{"ممتلئ" if st.session_state.misses > st.session_state.hits else "متوازن"}</b></div></div>', unsafe_allow_html=True)
 
 # --- 3. المربع الذهبي ودرع التأمين ---
 if total_h > 0:
@@ -99,39 +90,25 @@ if total_h > 0:
     insurance_slot = sorted(MEATS, key=lambda x: gaps[x], reverse=True)[0] if all(c in VEGGIES for c in top_4) else sorted(scores, key=scores.get, reverse=True)[4]
     st.session_state.current_preds = top_4 + [insurance_slot]
     
-    st.markdown(f"""
-    <div class="next-hit-card">
-        <div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي</div>
-        <div class="quad-box">{"".join([f'<div class="quad-item">{"⏳ " if gaps[c] > 15 else ""}{SYMBOLS[c]}</div>' for c in top_4])}</div>
-    </div>
-    <div class="insurance-card">
-        <div style="color:#00aaff; font-size:12px; font-weight:bold;">🛡️ درع التأمين</div>
-        <div style="font-size:24px; margin-top:5px;">{SYMBOLS[insurance_slot]}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<div class="next-hit-card"><div style="color:#39ff14; font-size:12px; font-weight:bold;">🎯 المربع الذهبي</div><div class="quad-box">{"".join([f'<div class="quad-item">{SYMBOLS[c]}</div>' for c in top_4])}</div></div><div class="insurance-card"><div style="color:#00aaff; font-size:12px; font-weight:bold;">🛡️ درع التأمين</div><div style="font-size:24px; margin-top:5px;">{SYMBOLS[insurance_slot]}</div></div>', unsafe_allow_html=True)
 
-# --- 4. شريط الأنماط والجكبوت ---
-gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
+# --- 4. حالة النمط والجكبوت ---
 p_status = "ثابت ✅" if st.session_state.consecutive_misses < 2 else "متغير ⚠️"
-p_bg = "#003300" if p_status == "ثابت ✅" else "#331a00"
-st.markdown(f'<div style="text-align:center; font-size:11px; margin-bottom:10px;">💰 جكبوت: {gap_9} | 🧠 الأنماط: {st.session_state.patterns_found} | <span class="pattern-pulse" style="background:{p_bg}; color:white;">الحالة: {p_status}</span></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="text-align:center; font-size:11px; margin-bottom:10px;">🧠 الأنماط: {st.session_state.patterns_found} | <span class="pattern-pulse" style="background:#222; color:white;">الحالة: {p_status}</span></div>', unsafe_allow_html=True)
 
-# --- 5. شريط النتائج التاريخي ---
 if hist:
     st.markdown(f'<div class="last-result-banner">⏮️ الأخيرة: {SYMBOLS[hist[-1]]}</div>', unsafe_allow_html=True)
 
-# --- 6. لوحة الأيقونات الموحدة (التصميم المطلوب) ---
-st.markdown('<div class="unified-icon-board">', unsafe_allow_html=True)
-st.write("<div style='color:#39ff14; font-size:12px; font-weight:bold; margin-bottom:5px;'>🔘 سجل النتيجة (لوحة أيقونات)</div>", unsafe_allow_html=True)
-r1 = st.columns(5)
-r2 = st.columns(4)
-for i, c in enumerate([5, 7, 6, 8, 9]):
-    if r1[i].button(SYMBOLS[c], key=f"btn_{c}"): register_result(c); st.rerun()
-for i, c in enumerate([1, 2, 3, 4]):
-    if r2[i].button(SYMBOLS[c], key=f"btn_{c}"): register_result(c); st.rerun()
+# --- 5. سجل النتيجة (المربع الواحد المطلوب) ---
+st.markdown('<div class="unified-grid">', unsafe_allow_html=True)
+# عرض الرموز كأزرار متراصة داخل نفس الإطار
+for code in [5, 7, 6, 8, 9, 1, 2, 3, 4]:
+    if st.button(SYMBOLS[code], key=f"btn_{code}"):
+        register_result(code)
+        st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- أزرار الإدارة السفلى ---
+# --- أزرار الإدارة ---
 c1, c2 = st.columns(2)
 if c1.button("↩️ تراجع"):
     if hist: st.session_state.history.pop(); st.rerun()
