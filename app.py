@@ -1,9 +1,9 @@
 import streamlit as st
 
 # --- إعدادات الصفحة وحفظ البيانات ---
-st.set_page_config(page_title="Greedy AI v96.6", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="Greedy AI v96.7", page_icon="🚥", layout="centered")
 
-# تأكيد حفظ الأرقام (Memory Management)
+# تأكيد حفظ الأرقام 
 for key in ['history', 'hits', 'misses', 'cons_m', 'p_count', 'preds', 'action_hit', 'max_streak', 'cur_streak']:
     if key not in st.session_state:
         st.session_state[key] = [] if key in ['history', 'preds', 'action_hit'] else 0
@@ -36,13 +36,7 @@ def undo_last():
             st.session_state.cons_m -= 1
         st.rerun()
 
-# --- خوارزمية تتابع الرموز ---
-def get_likely_next(hist):
-    if len(hist) < 2: return None
-    last_s = hist[-1]; pairs = [hist[i+1] for i in range(len(hist)-1) if hist[i] == last_s]
-    return max(set(pairs), key=pairs.count) if pairs else None
-
-# --- التنسيق (CSS) لإرجاع الواجهة الأصلية ---
+# --- التنسيق (CSS) المطور للصف الرباعي ---
 st.markdown("""
     <style>
     .block-container { padding-top: 1rem; }
@@ -50,12 +44,15 @@ st.markdown("""
     .main-card { background: #1a1a1a; border: 2px solid #39ff14; padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 8px; }
     .quad-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
     .quad-item { background: #002200; border: 1px solid #39ff14; padding: 6px; border-radius: 8px; color: white; font-weight: bold; font-size: 12px; }
+    
+    /* شبكة الصف الرباعي الصغير */
+    .pro-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 3px; margin-top: 8px; }
+    .pro-box { background: #0a0a0a; border: 1px solid #444; padding: 4px; border-radius: 6px; text-align: center; }
+    
     .mini-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px; }
     .mini-box { background: #111; border: 1px solid #333; padding: 4px; border-radius: 6px; text-align: center; }
-    .pro-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 8px; }
-    .pro-box { background: #0a0a0a; border: 1px solid #444; padding: 6px; border-radius: 8px; text-align: center; }
-    .lbl { font-size: 8px; color: #777; font-weight: bold; }
-    .val { font-size: 11px; color: white; font-weight: bold; }
+    .lbl { font-size: 7px; color: #777; font-weight: bold; text-transform: uppercase; }
+    .val { font-size: 9px; color: white; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -70,44 +67,49 @@ st.markdown(f'<div class="mini-grid">'
             f'<div class="mini-box"><span class="lbl">📉 نمط</span><br><b class="val">{st.session_state.p_count}</b></div></div>', unsafe_allow_html=True)
 
 # --- 2. المربع الذهبي (المفلتر) ---
-likely_next = get_likely_next(hist)
-if total_h >= 0:
-    recent_15 = hist[-15:]; gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 9)}
-    scores = {c: (recent_15.count(c) * 0.7 + (gaps[c] * 0.3)) * (1.0 if recent_15.count(c) > 1 else 0.2) for c in range(1, 9)}
-    top_4 = sorted(scores, key=scores.get, reverse=True)[:4]
-    ins_slot = sorted([5,6,7,8], key=lambda x: gaps[x], reverse=True)[0] if all(c in [1,2,3,4] for c in top_4) else sorted(scores, key=scores.get, reverse=True)[4]
-    st.session_state.preds = top_4 + [ins_slot]
-    
-    items_html = "".join([f'<div class="quad-item">{SYMBOLS[c]} {"✨" if c == likely_next else ""}</div>' for c in top_4])
-    st.markdown(f'<div class="main-card"><div style="color:#39ff14; font-size:10px; font-weight:bold;">🎯 المربع الذهبي (مفلتر 🛡️)</div><div class="quad-box">{items_html}</div></div>', unsafe_allow_html=True)
+recent_15 = hist[-15:]; gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 9)}
+scores = {c: (recent_15.count(c) * 0.7 + (gaps[c] * 0.3)) * (1.0 if recent_15.count(c) > 1 else 0.2) for c in range(1, 9)}
+top_4 = sorted(scores, key=scores.get, reverse=True)[:4]
+ins_slot = sorted([5,6,7,8], key=lambda x: gaps[x], reverse=True)[0] if all(c in [1,2,3,4] for c in top_4) else sorted(scores, key=scores.get, reverse=True)[4]
+st.session_state.preds = top_4 + [ins_slot]
+st.markdown(f'<div class="main-card"><div style="color:#39ff14; font-size:10px; font-weight:bold;">🎯 المربع الذهبي (مفلتر 🛡️)</div><div class="quad-box">{"".join([f'<div class="quad-item">{SYMBOLS[c]}</div>' for c in top_4])}</div></div>', unsafe_allow_html=True)
 
-    # --- 3. التأمين وتاريخ آخر 5 ---
-    last_5_html = "".join([f'<span style="margin-left:3px;">{SYMBOLS[c]}</span>' for c in hist[-5:]])
-    conf = min(95, 40 + (gaps[ins_slot] * 2))
-    st.markdown(f'<div style="display:flex; gap:6px; margin-bottom:8px;">'
-                f'<div class="mini-box" style="width:70px; border-color:#00aaff;"><span class="lbl" style="color:#00aaff">🛡️ {conf}%</span><br><span style="font-size:16px;">{SYMBOLS[ins_slot]}</span></div>'
-                f'<div class="mini-box" style="flex:1; display:flex; justify-content:center; align-items:center; font-size:18px;">{last_5_html if last_5_html else "..."}</div></div>', unsafe_allow_html=True)
+# --- 3. التأمين وآخر 5 ---
+last_5_html = "".join([f'<span style="margin-left:3px;">{SYMBOLS[c]}</span>' for c in hist[-5:]])
+st.markdown(f'<div style="display:flex; gap:6px; margin-bottom:8px;"><div class="mini-box" style="width:70px; border-color:#00aaff;"><span class="lbl" style="color:#00aaff">🛡️ تأمين</span><br><span style="font-size:16px;">{SYMBOLS[ins_slot]}</span></div>'
+            f'<div class="mini-box" style="flex:1; display:flex; justify-content:center; align-items:center; font-size:18px;">{last_5_html if last_5_html else "..."}</div></div>', unsafe_allow_html=True)
 
-# --- 4. الأزرار (رجوع للنظام القديم) ---
+# --- 4. الأزرار ---
 r1, r2 = st.columns(5), st.columns(4)
 for i, c in enumerate([5, 7, 6, 8, 9]):
     if r1[i].button(SYMBOLS[c], key=f"b_{c}"): register_result(c); st.rerun()
 for i, c in enumerate([1, 2, 3, 4]):
     if r2[i].button(SYMBOLS[c], key=f"b_{c}"): register_result(c); st.rerun()
 
-# --- 5. صف الإحصاء وصف الحماية الثلاثي ---
-gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
-meat_count = sum(1 for x in recent_15 if x in [5,6,7,8])
-wave_icon = "🥩" if meat_count > 8 else ("🥗" if meat_count < 7 else "🔄")
-adv_txt = "💸" if st.session_state.hits > st.session_state.misses + 5 else ("⚠️" if st.session_state.cons_m >= 2 else "⚖️")
-
-st.markdown(f'<div class="mini-grid"><div class="mini-box"><span class="lbl">💰 جكبوت</span><br><b class="val">{gap_9}</b></div><div class="mini-box"><span class="lbl">📡 موجة</span><br><b class="val">{wave_icon}</b></div><div class="mini-box"><span class="lbl">🧠 أنماط</span><br><b class="val">{st.session_state.p_count}</b></div><div class="mini-box"><span class="lbl">💵 رهان</span><br><b class="val">{adv_txt}</b></div></div>', unsafe_allow_html=True)
-
+# --- 5. منطق "إشارة الانطلاق" 🚥 ---
 recent_10_hits = sum(1 for x in st.session_state.action_hit[-10:] if x)
 scam_status = "آمن ✅" if recent_10_hits >= 4 or len(hist) < 10 else "غدر 🚨"
-st.markdown(f'<div class="pro-grid-3"><div class="pro-box"><span class="lbl">📡 تنبؤ</span><br><b class="val">{"مستقر ✅" if st.session_state.cons_m == 0 else "قلق 🧨"}</b></div><div class="pro-box" style="border-color:{"#39ff14" if "✅" in scam_status else "#ff4b4b"}"><span class="lbl">🚨 إنذار</span><br><b class="val">{scam_status}</b></div><div class="pro-box"><span class="lbl">🏆 سلسلة</span><br><b class="val">{st.session_state.max_streak}</b></div></div>', unsafe_allow_html=True)
+trend_val = "مستقر ✅" if st.session_state.cons_m == 0 else "قلق 🧨"
 
-# --- 6. التراجع والرادار ---
+# حساب الإشارة:
+if scam_status == "غدر 🚨" or st.session_state.cons_m > 2:
+    launch_sig, sig_clr = "STOP 🔴", "#ff4b4b"
+elif recent_10_hits >= 5 and trend_val == "مستقر ✅":
+    launch_sig, sig_clr = "GO 🟢", "#39ff14"
+else:
+    launch_sig, sig_clr = "WAIT 🟡", "#ffaa00"
+
+# --- 6. الصف الرباعي الجديد ---
+st.markdown(f"""
+<div class="pro-grid-4">
+    <div class="pro-box"><span class="lbl">📡 تنبؤ</span><br><b class="val" style="color:{"#39ff14" if "مستقر" in trend_val else "#ffaa00"}">{trend_val}</b></div>
+    <div class="pro-box"><span class="lbl">🚨 إنذار</span><br><b class="val" style="color:{"#39ff14" if "آمن" in scam_status else "#ff4b4b"}">{scam_status}</b></div>
+    <div class="pro-box"><span class="lbl">🏆 سلسلة</span><br><b class="val">{st.session_state.max_streak}</b></div>
+    <div class="pro-box" style="border-color:{sig_clr}"><span class="lbl">🚥 الإشارة</span><br><b class="val" style="color:{sig_clr}">{launch_sig}</b></div>
+</div>
+""", unsafe_allow_html=True)
+
+# --- 7. التراجع والرادار ---
 c1, c2 = st.columns([1, 2])
 if c1.button("↩️"): undo_last()
 if total_h > 0:
