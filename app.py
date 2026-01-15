@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة وحفظ البيانات ---
-st.set_page_config(page_title="Greedy AI v96.1", page_icon="📈", layout="centered")
+st.set_page_config(page_title="Greedy AI v96.2", page_icon="🚨", layout="centered")
 
 # تأكيد حفظ الأرقام (Memory Management)
 for key in ['history', 'hits', 'misses', 'cons_m', 'p_count', 'preds', 'action_hit', 'max_streak', 'cur_streak']:
@@ -46,16 +46,16 @@ st.markdown("""
     .quad-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
     .quad-item { background: #002200; border: 1px solid #39ff14; padding: 6px; border-radius: 8px; color: white; font-weight: bold; font-size: 11px; }
     
-    /* الصف الرباعي المدمج */
+    /* شبكة الأدوات الصغيرة */
     .mini-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px; }
     .mini-box { background: #111; border: 1px solid #333; padding: 4px; border-radius: 6px; text-align: center; }
     
-    /* صف التنبؤ والسلسلة */
-    .pro-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 6px; margin-top: 8px; }
-    .pro-box { background: #0a0a0a; border: 1px solid #444; padding: 6px; border-radius: 10px; text-align: center; }
+    /* صف الحماية الثلاثي المطور */
+    .pro-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 8px; }
+    .pro-box { background: #0a0a0a; border: 1px solid #444; padding: 6px; border-radius: 8px; text-align: center; }
     
-    .lbl { font-size: 8px; color: #777; font-weight: bold; text-transform: uppercase; }
-    .val { font-size: 11px; color: white; font-weight: bold; }
+    .lbl { font-size: 7px; color: #777; font-weight: bold; text-transform: uppercase; }
+    .val { font-size: 10px; color: white; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -96,29 +96,28 @@ for i, c in enumerate([5, 7, 6, 8, 9]):
 for i, c in enumerate([1, 2, 3, 4]):
     if r2[i].button(SYMBOLS[c], key=f"b_{c}"): register_result(c); st.rerun()
 
-# --- 5. الصف الرباعي المدمج (الرهان، ملوك الموجة، الجاكبوت، الأنماط) ---
+# --- 5. الصف الرباعي (الجاكبوت، الموجة، الأنماط، الرهان) ---
 gap_9 = (list(reversed(hist)).index(9) if 9 in hist else total_h)
-meat_count = sum(1 for x in recent_15 if x in [5,6,7,8])
-wave_icon = "🥩" if meat_count > 8 else ("🥗" if meat_count < 7 else "🔄")
+wave_icon = "🥩" if sum(1 for x in recent_15 if x in [5,6,7,8]) > 8 else ("🥗" if sum(1 for x in recent_15 if x in [5,6,7,8]) < 7 else "🔄")
 adv_txt = "💸" if st.session_state.hits > st.session_state.misses + 5 else ("⚠️" if st.session_state.cons_m >= 2 else "⚖️")
 
-st.markdown(f"""
-<div class="mini-grid">
-    <div class="mini-box"><span class="lbl">💰 جكبوت</span><br><b class="val">{gap_9}</b></div>
-    <div class="mini-box"><span class="lbl">📡 موجة</span><br><b class="val">{wave_icon}</b></div>
-    <div class="mini-box"><span class="lbl">🧠 أنماط</span><br><b class="val">{st.session_state.p_count}</b></div>
-    <div class="mini-box"><span class="lbl">💵 رهان</span><br><b class="val">{adv_txt}</b></div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div class="mini-grid"><div class="mini-box"><span class="lbl">💰 جكبوت</span><br><b class="val">{gap_9}</b></div><div class="mini-box"><span class="lbl">📡 موجة</span><br><b class="val">{wave_icon}</b></div><div class="mini-box"><span class="lbl">🧠 أنماط</span><br><b class="val">{st.session_state.p_count}</b></div><div class="mini-box"><span class="lbl">💵 رهان</span><br><b class="val">{adv_txt}</b></div></div>', unsafe_allow_html=True)
 
-# --- 6. صف التنبؤ والسلسلة (الأفكار الجديدة) ---
+# --- 6. صف الحماية الثلاثي (الأفكار الجديدة) ---
+# حساب إنذار الغدر (آخر 10 جولات)
+recent_10_hits = sum(1 for x in st.session_state.action_hit[-10:] if x)
+scam_status = "آمن ✅" if recent_10_hits >= 4 or len(hist) < 10 else "غدر 🚨"
+scam_clr = "#39ff14" if scam_status == "آمن ✅" else "#ff4b4b"
+
+# تنبؤ الموجة
 trend_val = "مستقر ✅" if st.session_state.cons_m == 0 else "قلق 🧨"
 trend_clr = "#39ff14" if st.session_state.cons_m == 0 else "#ffaa00"
 
 st.markdown(f"""
-<div class="pro-grid">
-    <div class="pro-box" style="border-color:{trend_clr}"><span class="lbl">📡 تنبؤ الموجة</span><br><b class="val" style="color:{trend_clr}">{trend_val}</b></div>
-    <div class="pro-box" style="border-color:#39ff14"><span class="lbl">🏆 أفضل سلسلة</span><br><b class="val" style="color:#39ff14">{st.session_state.max_streak}</b></div>
+<div class="pro-grid-3">
+    <div class="pro-box" style="border-color:{trend_clr}"><span class="lbl">📡 تنبؤ</span><br><b class="val" style="color:{trend_clr}">{trend_val}</b></div>
+    <div class="pro-box" style="border-color:{scam_clr}"><span class="lbl">🚨 إنذار</span><br><b class="val" style="color:{scam_clr}">{scam_status}</b></div>
+    <div class="pro-box" style="border-color:#39ff14"><span class="lbl">🏆 سلسلة</span><br><b class="val" style="color:#39ff14">{st.session_state.max_streak}</b></div>
 </div>
 """, unsafe_allow_html=True)
 
