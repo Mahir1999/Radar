@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v97.1", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="Greedy AI v97.2", page_icon="🔥", layout="centered")
 
 for key in ['history', 'hits', 'misses', 'cons_m', 'p_count', 'preds', 'action_hit', 'max_streak', 'cur_streak']:
     if key not in st.session_state:
@@ -26,16 +26,21 @@ def register_result(code):
 def undo_last():
     if st.session_state.history:
         st.session_state.history.pop()
-        st.session_state.action_hit.pop()
+        last_hit = st.session_state.action_hit.pop()
+        if last_hit: 
+            st.session_state.hits -= 1
+            st.session_state.cur_streak = max(0, st.session_state.cur_streak - 1)
+        else: 
+            st.session_state.misses -= 1
+            st.session_state.cons_m -= 1
         st.rerun()
 
 # --- خوارزمية الذاكرة المرنة ---
 def find_flexible_pattern(hist):
     if len(hist) < 3: return "بيانات غير كافية ⏳", "#777"
-    last_3 = hist[-3:]
+    last_3 = hist[-3:]; last_2 = hist[-2:]
     for i in range(len(hist) - 4):
         if hist[i:i+3] == last_3: return "نمط عميق (3) موجود ✅", "#39ff14"
-    last_2 = hist[-2:]
     for i in range(len(hist) - 3):
         if hist[i:i+2] == last_2: return "نمط ثنائي (2) موجود ✅", "#ffaa00"
     return "نمط جديد 🆕", "#ff4b4b"
@@ -67,26 +72,28 @@ st.markdown(f'<div class="mini-grid">'
             f'<div class="mini-box"><span class="lbl" style="color:#ff4b4b">❌ خطأ</span><br><b class="val">{st.session_state.misses}</b></div>'
             f'<div class="mini-box"><span class="lbl">📉 نمط</span><br><b class="val">{st.session_state.p_count}</b></div></div>', unsafe_allow_html=True)
 
-# --- منطق المربع الذهبي والتأمين الذكي ---
+# --- منطق المربع الذهبي + درع حماية السلسلة ---
 if total_h > 0:
     recent_15 = hist[-15:]; gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 9)}
     scores = {c: (recent_15.count(c) * 0.7 + (gaps[c] * 0.3)) * (1.0 if recent_15.count(c) > 1 else 0.2) for c in range(1, 9)}
     
-    # اختيار المربع الذهبي
+    # تفعيل الدرع: إذا كانت السلسلة الحالية >= 4، نقوم بتقليل وزن الرموز التي ظهرت في آخر فوزين لنتجنب "فخ التكرار"
+    if st.session_state.cur_streak >= 4:
+        last_wins = hist[-2:]
+        for sym in last_wins:
+            if sym in scores: scores[sym] *= 0.6 # تقليل الوزن برفق لحماية السلسلة
+    
     top_4 = sorted(scores, key=scores.get, reverse=True)[:4]
     
-    # منطق التأمين المانع للتكرار
-    all_sorted = sorted(scores, key=scores.get, reverse=True)
-    ins_slot = all_sorted[4] # الخيار الخامس افتراضياً
-    # إذا كان الخيار الخامس ليس من فئة اللحوم، نبحث عن أقوى لحم غير موجود في التوب 4
-    meat_options = [5, 6, 7, 8]
+    # التأمين الذكي (مانع التكرار)
+    meat_options = [5, 6, 7, 8]; ins_slot = sorted(scores, key=scores.get, reverse=True)[4]
     for meat in meat_options:
         if meat not in top_4:
             ins_slot = meat
             break
 
     st.session_state.preds = top_4 + [ins_slot]
-    st.markdown(f'<div class="main-card"><div style="color:#39ff14; font-size:10px; font-weight:bold;">🎯 المربع الذهبي (ذاكرة عميقة 🧠)</div><div class="quad-box">{"".join([f'<div class="quad-item">{SYMBOLS[c]}</div>' for c in top_4])}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="main-card"><div style="color:#39ff14; font-size:10px; font-weight:bold;">🎯 المربع الذهبي (درع السلسلة 🛡️)</div><div class="quad-box">{"".join([f'<div class="quad-item">{SYMBOLS[c]}</div>' for c in top_4])}</div></div>', unsafe_allow_html=True)
 
 # --- التأمين وآخر 5 ---
     last_5_html = "".join([f'<span style="margin-left:3px;">{SYMBOLS[c]}</span>' for c in hist[-5:]])
