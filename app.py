@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v97.0", page_icon="🔍", layout="centered")
+st.set_page_config(page_title="Greedy AI v97.1", page_icon="🛡️", layout="centered")
 
 for key in ['history', 'hits', 'misses', 'cons_m', 'p_count', 'preds', 'action_hit', 'max_streak', 'cur_streak']:
     if key not in st.session_state:
@@ -29,22 +29,15 @@ def undo_last():
         st.session_state.action_hit.pop()
         st.rerun()
 
-# --- خوارزمية الذاكرة المرنة (Flexible Pattern Matcher) ---
+# --- خوارزمية الذاكرة المرنة ---
 def find_flexible_pattern(hist):
     if len(hist) < 3: return "بيانات غير كافية ⏳", "#777"
-    
-    # 1. البحث عن نمط ثلاثي (آخر 3 رموز)
     last_3 = hist[-3:]
     for i in range(len(hist) - 4):
-        if hist[i:i+3] == last_3:
-            return "نمط عميق (3) موجود ✅", "#39ff14"
-            
-    # 2. البحث عن نمط ثنائي (آخر رمزبن)
+        if hist[i:i+3] == last_3: return "نمط عميق (3) موجود ✅", "#39ff14"
     last_2 = hist[-2:]
     for i in range(len(hist) - 3):
-        if hist[i:i+2] == last_2:
-            return "نمط ثنائي (2) موجود ✅", "#ffaa00"
-            
+        if hist[i:i+2] == last_2: return "نمط ثنائي (2) موجود ✅", "#ffaa00"
     return "نمط جديد 🆕", "#ff4b4b"
 
 # --- التنسيق (CSS) ---
@@ -74,17 +67,30 @@ st.markdown(f'<div class="mini-grid">'
             f'<div class="mini-box"><span class="lbl" style="color:#ff4b4b">❌ خطأ</span><br><b class="val">{st.session_state.misses}</b></div>'
             f'<div class="mini-box"><span class="lbl">📉 نمط</span><br><b class="val">{st.session_state.p_count}</b></div></div>', unsafe_allow_html=True)
 
-# --- المربع الذهبي (ذاكرة عميقة) ---
+# --- منطق المربع الذهبي والتأمين الذكي ---
 if total_h > 0:
     recent_15 = hist[-15:]; gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 9)}
     scores = {c: (recent_15.count(c) * 0.7 + (gaps[c] * 0.3)) * (1.0 if recent_15.count(c) > 1 else 0.2) for c in range(1, 9)}
+    
+    # اختيار المربع الذهبي
     top_4 = sorted(scores, key=scores.get, reverse=True)[:4]
-    st.session_state.preds = top_4 + [5]
+    
+    # منطق التأمين المانع للتكرار
+    all_sorted = sorted(scores, key=scores.get, reverse=True)
+    ins_slot = all_sorted[4] # الخيار الخامس افتراضياً
+    # إذا كان الخيار الخامس ليس من فئة اللحوم، نبحث عن أقوى لحم غير موجود في التوب 4
+    meat_options = [5, 6, 7, 8]
+    for meat in meat_options:
+        if meat not in top_4:
+            ins_slot = meat
+            break
+
+    st.session_state.preds = top_4 + [ins_slot]
     st.markdown(f'<div class="main-card"><div style="color:#39ff14; font-size:10px; font-weight:bold;">🎯 المربع الذهبي (ذاكرة عميقة 🧠)</div><div class="quad-box">{"".join([f'<div class="quad-item">{SYMBOLS[c]}</div>' for c in top_4])}</div></div>', unsafe_allow_html=True)
 
 # --- التأمين وآخر 5 ---
     last_5_html = "".join([f'<span style="margin-left:3px;">{SYMBOLS[c]}</span>' for c in hist[-5:]])
-    st.markdown(f'<div style="display:flex; gap:6px; margin-bottom:8px;"><div class="mini-box" style="width:70px; border-color:#00aaff;"><span class="lbl" style="color:#00aaff">🛡️ تأمين</span><br><span style="font-size:16px;">{SYMBOLS[5]}</span></div>'
+    st.markdown(f'<div style="display:flex; gap:6px; margin-bottom:8px;"><div class="mini-box" style="width:70px; border-color:#00aaff;"><span class="lbl" style="color:#00aaff">🛡️ تأمين</span><br><span style="font-size:16px;">{SYMBOLS[ins_slot]}</span></div>'
                 f'<div class="mini-box" style="flex:1; display:flex; justify-content:center; align-items:center; font-size:18px;">{last_5_html if last_5_html else "..."}</div></div>', unsafe_allow_html=True)
 
 # --- الأزرار ---
@@ -94,7 +100,7 @@ for i, c in enumerate([5, 7, 6, 8, 9]):
 for i, c in enumerate([1, 2, 3, 4]):
     if r2[i].button(SYMBOLS[c], key=f"b_{c}"): register_result(c); st.rerun()
 
-# --- الصف الرباعي (تنبؤ، إنذار، سلسلة، إشارة) ---
+# --- الصف الرباعي ---
 recent_10_hits = sum(1 for x in st.session_state.action_hit[-10:] if x)
 scam_status = "آمن ✅" if recent_10_hits >= 4 or len(hist) < 10 else "غدر 🚨"
 trend_val = "مستقر ✅" if st.session_state.cons_m == 0 else "قلق 🧨"
@@ -102,16 +108,9 @@ if scam_status == "غدر 🚨" or st.session_state.cons_m > 2: launch_sig, sig_
 elif recent_10_hits >= 5 and trend_val == "مستقر ✅": launch_sig, sig_clr = "GO 🟢", "#39ff14"
 else: launch_sig, sig_clr = "WAIT 🟡", "#ffaa00"
 
-st.markdown(f"""
-<div class="pro-grid-4">
-    <div class="pro-box"><span class="lbl">📡 تنبؤ</span><br><b class="val" style="color:{"#39ff14" if "مستقر" in trend_val else "#ffaa00"}">{trend_val}</b></div>
-    <div class="pro-box"><span class="lbl">🚨 إنذار</span><br><b class="val" style="color:{"#39ff14" if "آمن" in scam_status else "#ff4b4b"}">{scam_status}</b></div>
-    <div class="pro-box"><span class="lbl">🏆 سلسلة</span><br><b class="val">{st.session_state.max_streak}</b></div>
-    <div class="pro-box" style="border-color:{sig_clr}"><span class="lbl">🚥 الإشارة</span><br><b class="val" style="color:{sig_clr}">{launch_sig}</b></div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div class="pro-grid-4"><div class="pro-box"><span class="lbl">📡 تنبؤ</span><br><b class="val" style="color:{"#39ff14" if "مستقر" in trend_val else "#ffaa00"}">{trend_val}</b></div><div class="pro-box"><span class="lbl">🚨 إنذار</span><br><b class="val" style="color:{"#39ff14" if "آمن" in scam_status else "#ff4b4b"}">{scam_status}</b></div><div class="pro-box"><span class="lbl">🏆 سلسلة</span><br><b class="val">{st.session_state.max_streak}</b></div><div class="pro-box" style="border-color:{sig_clr}"><span class="lbl">🚥 الإشارة</span><br><b class="val" style="color:{sig_clr}">{launch_sig}</b></div></div>', unsafe_allow_html=True)
 
-# --- 6. رادار الذاكرة المرنة (الميزة الجديدة) ---
+# --- رادار الذاكرة المرنة ---
 pattern_msg, pattern_clr = find_flexible_pattern(hist)
 c1, c2 = st.columns([1, 2.5])
 if c1.button("↩️"): undo_last()
