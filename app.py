@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Greedy AI v99.1", page_icon="🏆", layout="centered")
+st.set_page_config(page_title="Greedy AI v99.2", page_icon="🏆", layout="centered")
 
 # --- تهيئة الذاكرة ---
 keys = ['history', 'hits', 'misses', 'cons_m', 'p_count', 'preds', 'action_hit', 'max_streak', 'cur_streak', 'balance', 'target']
@@ -19,10 +19,16 @@ def register_result(code, bet_quad, bet_ins):
     is_ins_hit = (len(st.session_state.preds) > 4 and code == st.session_state.preds[4])
     h = st.session_state.history
     
-    # حساب الأنماط
-    if len(h) >= 2 and h[-2:] == h[:-2][-2:]: st.session_state.p_count += 1
+    # --- إصلاح عداد الأنماط (البحث عن تطابق في التاريخ الكامل) ---
+    if len(h) >= 2:
+        last_pair = [h[-1], code] # الرموز التي تشكل النمط الحالي
+        # البحث في التاريخ عما إذا ظهر هذا الزوج سابقاً
+        for i in range(len(h) - 1):
+            if h[i:i+2] == last_pair:
+                st.session_state.p_count += 1
+                break # نزيد العداد مرة واحدة لكل جولة فيها تطابق
     
-    # الحساب المالي (يفعل بعد الجولة 30)
+    # الحساب المالي بعد الجولة 30
     if len(h) >= 30:
         total_bet = (bet_quad * 4) + bet_ins
         win_amount = (bet_quad * MULT[code]) if is_quad_hit else ((bet_ins * MULT[code]) if is_ins_hit else 0)
@@ -38,7 +44,7 @@ def register_result(code, bet_quad, bet_ins):
     
     st.session_state.history.append(code); st.session_state.action_hit.append(is_hit)
 
-# --- محرك التوقعات وتحليل القوة ---
+# --- محرك التوقعات ---
 hist = st.session_state.history; total_h = len(hist)
 shift_active = (len(st.session_state.action_hit) >= 3 and all(x is False for x in st.session_state.action_hit[-3:]) and total_h > 10)
 probs = {c: 10 for c in range(1, 9)}
@@ -63,7 +69,7 @@ else:
     max_s = max(scores.values()) if scores.values() else 1
     probs = {c: int((scores[c]/max_s)*100) for c in range(1, 9)}
 
-# --- التنسيق (CSS) ---
+# --- التنسيق البصري ---
 st.markdown("""
     <style>
     .main-card { background: #1a1a1a; border: 2px solid #39ff14; padding: 10px; border-radius: 15px; text-align: center; margin-bottom: 8px; }
@@ -75,11 +81,10 @@ st.markdown("""
     .pro-box { background: #0a0a0a; border: 1px solid #444; padding: 4px; border-radius: 6px; text-align: center; }
     .lbl { font-size: 8px; color: #777; font-weight: bold; }
     .val { font-size: 10px; color: white; font-weight: bold; }
-    .target-met { background: #d4af37 !important; color: black !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. الإدارة ---
+# 1. إعدادات الرهان
 with st.expander("💰 إعدادات الرهان والهدف", expanded=(total_h >= 30)):
     c1, c2, c3, c4 = st.columns(4)
     capital = c1.number_input("رأس المال", value=1000)
@@ -92,38 +97,37 @@ with st.expander("💰 إعدادات الرهان والهدف", expanded=(tota
             else: st.session_state[k] = 0
         st.rerun()
 
-# --- 2. محلل التكرار ---
+# 2. محلل التكرار
 if total_h > 0:
     cols = st.columns(8)
     for i in range(1, 9):
         count = hist.count(i)
         cols[i-1].markdown(f'<div style="background:rgba(57,255,20,{min(1.0, count/10)}); border-radius:4px; text-align:center; font-size:11px;">{SYMBOLS[i]}<br><span style="font-size:8px;">{count}</span></div>', unsafe_allow_html=True)
 
-# --- 3. شريط الربح ---
+# 3. شريط الربح والهدف
 is_target_met = st.session_state.balance >= st.session_state.target and total_h >= 30
-if is_target_met: st.success("🎉 تم تحقيق الهدف!")
 st.markdown(f'<div class="finance-bar {"target-met" if is_target_met else ""}">'
             f'<div style="text-align:center"><span class="lbl">الرصيد</span><br><b style="font-size:12px;">{capital + st.session_state.balance}</b></div>'
             f'<div style="text-align:center"><span class="lbl">الربح</span><br><b style="font-size:12px;">{st.session_state.balance:+}</b></div>'
             f'<div style="text-align:center"><span class="lbl">الهدف</span><br><b style="font-size:12px;">{st.session_state.target}</b></div></div>', unsafe_allow_html=True)
 
-# --- 4. المربع الذهبي وشريط القوة ---
+# 4. المربع الذهبي
 st.markdown(f'<div class="main-card"><div style="color:#39ff14; font-size:10px; font-weight:bold;">🎯 المربع الذهبي</div><div class="quad-box">' + 
     "".join([f'<div class="quad-item">{SYMBOLS[c]}<div class="lbl">{probs[c]}%</div><div class="prob-bar" style="width:{probs[c]}%"></div></div>' for c in st.session_state.preds[:4]]) + 
     '</div></div>', unsafe_allow_html=True)
 
-# --- 5. التأمين وآخر 5 ---
+# 5. التأمين وآخر 5
 ins = st.session_state.preds[4]; last_5 = "".join([f'<span style="margin-left:3px;">{SYMBOLS[c]}</span>' for c in hist[-5:]])
 st.markdown(f'<div style="display:flex; gap:6px; margin-bottom:8px;"><div style="width:70px; background:#111; border:1px solid #00aaff; border-radius:8px; text-align:center;"><span class="lbl" style="color:#00aaff">🛡️ تأمين</span><br><span style="font-size:16px;">{SYMBOLS[ins]}</span></div><div style="flex:1; background:#111; border-radius:8px; display:flex; justify-content:center; align-items:center; font-size:18px; border:1px solid #333;">{last_5 if last_5 else "..."}</div></div>', unsafe_allow_html=True)
 
-# --- 6. أزرار التسجيل ---
+# 6. الأزرار
 r1, r2 = st.columns(5), st.columns(4)
 for i, c in enumerate([5, 7, 6, 8, 9]):
     if r1[i].button(SYMBOLS[c], key=f"b_{c}"): register_result(c, bet_quad=bet_q, bet_ins=bet_i); st.rerun()
 for i, c in enumerate([1, 2, 3, 4]):
     if r2[i].button(SYMBOLS[c], key=f"b_{c}"): register_result(c, bet_quad=bet_q, bet_ins=bet_i); st.rerun()
 
-# --- 7. الرادار وإشارة الانطلاق ---
+# 7. الرادار وإشارة الانطلاق
 r10 = sum(1 for x in st.session_state.action_hit[-10:] if x)
 scam = "آمن ✅" if r10 >= 4 or total_h < 10 else "غدر 🚨"
 trnd = "مستقر ✅" if not shift_active else "تكيف 🌀"
@@ -137,14 +141,14 @@ st.markdown(f'<div style="display:grid; grid-template-columns: repeat(4, 1fr); g
             f'<div class="pro-box"><span class="lbl">🏆 سلسلة</span><br><b class="val">{st.session_state.max_streak}</b></div>'
             f'<div class="pro-box"><span class="lbl">🚥 إشارة</span><br><b class="val">{sig}</b></div></div>', unsafe_allow_html=True)
 
-# --- 8. الصف السفلي: التراجع + العدادات التقليدية ---
+# 8. الصف السفلي (التراجع + العدادات الثابتة + رادار النمط)
 c1, c2, c3, c4 = st.columns([0.8, 1, 1, 1])
 if c1.button("↩️"): 
-    if st.session_state.history: st.session_state.history.pop(); st.session_state.action_hit.pop(); st.rerun()
+    if st.session_state.history: 
+        st.session_state.history.pop(); st.session_state.action_hit.pop(); st.rerun()
 c2.markdown(f'<div class="mini-counter">🔄 جولة<br>{total_h}</div>', unsafe_allow_html=True)
 c3.markdown(f'<div class="mini-counter" style="border-color:#39ff14; color:#39ff14;">✅ صح<br>{st.session_state.hits}</div>', unsafe_allow_html=True)
 c4.markdown(f'<div class="mini-counter" style="border-color:#ff4b4b; color:#ff4b4b;">❌ خطأ<br>{st.session_state.misses}</div>', unsafe_allow_html=True)
 
-# رادار النمط في النهاية
 p_msg, p_clr = ("انتظار..", "#777") if total_h < 3 else (("نمط عميق (3) ✅", "#39ff14") if any(hist[i:i+3] == hist[-3:] for i in range(len(hist)-4)) else (("نمط ثنائي (2) ✅", "#ffaa00") if any(hist[i:i+2] == hist[-2:] for i in range(len(hist)-3)) else ("نمط جديد 🆕", "#ff4b4b")))
-st.markdown(f'<div style="background:#0a0a0a; border:1px dashed {p_clr}; padding:4px; border-radius:8px; font-size:9px; color:{p_clr}; text-align:center; font-weight:bold; margin-top:5px;">🔍 {p_msg} | 📉 {st.session_state.p_count} نمط</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="background:#0a0a0a; border:1px dashed {p_clr}; padding:4px; border-radius:8px; font-size:9px; color:{p_clr}; text-align:center; font-weight:bold; margin-top:5px;">🔍 {p_msg} | 📉 {st.session_state.p_count} نمط محفوظ</div>', unsafe_allow_html=True)
