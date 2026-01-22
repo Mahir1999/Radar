@@ -127,7 +127,7 @@ for i, c in enumerate([1, 2, 3, 4]):
 
 # الرادار السفلي
 h10 = sum(1 for x in st.session_state.action_hit[-10:] if x)
-sig = "STOP 🔴" if (total_h > 10 and h10 < 3) or shift_active else ("GO 🟢" if h10 >= 5 else "WAIT 🟡")
+sig = "توقف 🔴" if (total_h > 10 and h10 < 3) or shift_active else ("انطلق 🟢" if h10 >= 5 else "انتظر 🟡")
 st.markdown(f'<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px;">'
             f'<div class="mini-card">📡 {"تكيف" if shift_active else "مستقر"}</div><div class="mini-card">🚨 {"غدر" if h10 < 4 else "آمن"}</div>'
             f'<div class="mini-card">🏆 {st.session_state.max_streak}</div><div class="mini-card">🚥 {sig}</div></div>', unsafe_allow_html=True)
