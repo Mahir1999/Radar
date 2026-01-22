@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- 1. الإعدادات ---
-st.set_page_config(page_title="Greedy AI v105.0", page_icon="🎯", layout="centered")
+st.set_page_config(page_title="Greedy AI v105.1", page_icon="🎯", layout="centered")
 
 # --- 2. تهيئة الذاكرة المفصلة ---
 if 'history' not in st.session_state:
@@ -22,7 +22,7 @@ def register_result(code, bq, bi):
     is_hit = is_quad or is_ins
     
     # بصمة السيرفر الذكية
-    if len(h) > 10:
+    if len(h) >= 10:
         m_count = sum(1 for x in h[-10:] if x >= 5)
         if m_count > 6: st.session_state.fingerprint = "🚨 بصمة: ضغط لحوم عالٍ"
         elif m_count < 3: st.session_state.fingerprint = "🥗 بصمة: استقرار خضار"
@@ -109,10 +109,11 @@ st.markdown(f'<div class="finance-bar">'
             f'<div><small style="color:#777;">الربح الصافي</small><br><b style="color:{"#39ff14" if st.session_state.balance >= 0 else "#ff4b4b"}">{st.session_state.balance:+}</b></div>'
             f'<div><small style="color:#777;">الحالة</small><br><b style="color:#ffaa00;">{"نشط ✅" if total_h >= 30 else "إحماء ⏳"}</b></div></div>', unsafe_allow_html=True)
 
-st.markdown(f'<div class="main-box"><div style="color:#39ff14; font-size:11px; font-weight:bold; margin-bottom:5px;">🎯 المربع الذهبي (التخمين الدقيق)</div>'
+# تم هنا تعديل السطر بإضافة حرف f قبل علامة الاقتباس لإظهار كلمة البصمة
+st.markdown(f'<div class="main-box"><div style="color:#39ff14; font-size:11px; font-weight:bold; margin-bottom:5px;">🎯 المربع الذهبي (v105.1 مصلح)</div>'
             f'<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px;">' + 
             "".join([f'<div style="background:#002200; border:1px solid #39ff14; padding:5px; border-radius:8px;">{SYMBOLS[c]}<div style="font-size:8px;">{probs[c]}%</div></div>' for c in st.session_state.preds[:4]]) + 
-            '</div><div class="finger-tag">{st.session_state.fingerprint}</div></div>', unsafe_allow_html=True)
+            f'</div><div class="finger-tag">{st.session_state.fingerprint}</div></div>', unsafe_allow_html=True)
 
 ins = st.session_state.preds[4]; last_5_icons = "".join([f'<span style="margin-left:4px;">{SYMBOLS[c]}</span>' for c in hist[-5:]])
 st.markdown(f'<div style="display:flex; gap:8px; margin: 10px 0;"><div style="width:75px; background:#111; border:1px solid #00aaff; border-radius:10px; text-align:center;"><small style="color:#00aaff; font-size:9px;">🛡️ تأمين</small><br><span style="font-size:18px;">{SYMBOLS[ins]}</span></div>'
@@ -135,6 +136,7 @@ st.markdown(f'<div style="display:grid; grid-template-columns: repeat(4, 1fr); g
 c1, c2, c3, c4 = st.columns([0.8, 1, 1, 1])
 if c1.button("↩️"):
     if st.session_state.history:
+        # إصلاح التراجع الحقيقي
         status = st.session_state.action_hit.pop()
         if status: st.session_state.hits -= 1
         else: st.session_state.misses -= 1
