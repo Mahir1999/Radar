@@ -1,15 +1,14 @@
 import streamlit as st
 
-# --- 1. الإعدادات والواجهة ---
-st.set_page_config(page_title="Lucky Cat Radar PRO", page_icon="🎯", layout="centered")
+# --- 1. الإعدادات ---
+st.set_page_config(page_title="The Predator v115.0", page_icon="⚡", layout="centered")
 
-# --- 2. تهيئة الذاكرة (Persistence) ---
+# --- 2. الذاكرة الفولاذية ---
 if 'history' not in st.session_state:
     st.session_state.update({
-        'history': [], 'hits': 0, 'misses': 0, 'preds_history': [], 
-        'action_hit': [], 'balance': 0, 'cur_streak': 0, 'max_streak': 0,
-        'fingerprint': "جاري تحليل الموجة...", 'preds': [5, 7, 6, 8, 1],
-        'anti_fraud': False
+        'history': [], 'balance': 0, 'hits': 0, 'misses': 0,
+        'action_hit': [], 'preds': [1, 2, 3, 5, 8], 'preds_history': [],
+        'power_level': "Low"
     })
 
 SYMBOLS = {1: "🍅", 2: "🌽", 3: "🥕", 4: "🫑", 5: "🐔", 6: "🐑", 7: "🐟", 8: "🦐", 9: "💰"}
@@ -17,83 +16,86 @@ MULT = {1: 5, 2: 5, 3: 5, 4: 5, 5: 45, 6: 15, 7: 25, 8: 10, 9: 0}
 
 # --- 3. المحرك المالي ---
 def register_result(code, b_q, b_i):
-    last_preds = list(st.session_state.preds)
-    st.session_state.preds_history.append(last_preds)
-    is_q, is_i = code in last_preds[:4], (len(last_preds) > 4 and code == last_preds[4])
-    cost = (b_q * 4) + b_i
+    lp = list(st.session_state.preds)
+    st.session_state.preds_history.append(lp)
+    is_q, is_i = code in lp[:4], (len(lp) > 4 and code == lp[4])
     win = (b_q * MULT[code]) if is_q else ((b_i * MULT[code]) if is_i else 0)
-    st.session_state.balance += (win - cost)
-    if is_q or is_i:
-        st.session_state.hits += 1; st.session_state.cur_streak += 1
-        st.session_state.max_streak = max(st.session_state.max_streak, st.session_state.cur_streak)
-    else:
-        if code != 9: st.session_state.misses += 1; st.session_state.cur_streak = 0
-    st.session_state.history.append(code); st.session_state.action_hit.append(is_q or is_i)
+    st.session_state.balance += (win - (b_q * 4 + b_i))
+    st.session_state.history.append(code)
+    st.session_state.action_hit.append(is_q or is_i)
 
-# --- 4. خوارزمية الرادار (Logic Engine) ---
+# --- 4. خوارزمية "المفترس" (Logic v115) ---
 hist = st.session_state.history; total_h = len(hist)
-advice = "بانتظار البيانات.."
-gaps = {c: (list(reversed(hist)).index(c) if c in hist else total_h) for c in range(1, 9)}
+status_msg = "جاري تعقب السيرفر..."
+color_theme = "#39ff14"
 
-if total_h > 0:
-    # حساب النقاط بناءً على "البصمة الزمنية"
-    scores = {c: (gaps[c] * 2.5 + hist[-15:].count(c) * 4.0) for c in range(1, 9)}
+if total_h >= 3:
+    last_5 = hist[-5:]
+    # كشف "موجة التكرار" (الخضار المتواصل)
+    veg_count = sum(1 for x in last_5 if x <= 4)
     
-    # فحص "الغدر": خسارتين متتاليتين تحول النظام للحذر
-    last_hits = st.session_state.action_hit[-2:] if total_h >= 2 else [True]
-    st.session_state.anti_fraud = last_hits.count(False) >= 2
-    
-    if st.session_state.anti_fraud:
-        advice = "⚠️ السيرفر يغدر! مربع (حماية) مكرر"
-        for c in range(1, 5): scores[c] *= 10.0 # اللحاق بالخضار
+    if veg_count >= 4:
+        # السيرفر في حالة "تنشيف"، لا تعانده!
+        status_msg = "⚠️ موجة خضار عنيفة: اتبع السيرفر للحماية"
+        color_theme = "#00aaff" # لون الحماية
+        scores = {c: (last_5.count(c) * 50) for c in range(1, 9)}
+        st.session_state.preds = [1, 2, 3, 4] # المربع الذهبي خضار بالكامل
+        st.session_state.preds.append(5) # التأمين دجاجة للطوارئ
     else:
-        # كشف "الاستحقاق العالي"
-        if gaps[5] > 40 or gaps[7] > 30:
-            advice = "🔥 استحقاق عالي! ركز على اللحوم"
-            scores[5] *= 5.0; scores[7] *= 4.0
-        else:
-            advice = "🟢 وضع مستقر: العب بتوازن"
+        # السيرفر بدأ يفتح، وقت الهجوم
+        status_msg = "🔥 السيرفر يفتح: هجوم على اللحوم والمضاعفات"
+        color_theme = "#ff00ff" # لون الهجوم
+        scores = {c: (list(reversed(hist)).index(c) if c in hist else total_h) * 2 for c in range(1, 9)}
+        top = sorted(scores, key=scores.get, reverse=True)
+        st.session_state.preds = top[:4]
+        st.session_state.preds.append(next((m for m in [1, 8, 5] if m not in top[:4]), 1))
+else:
+    probs = {i: 0 for i in range(1, 9)}
 
-    top = sorted(scores, key=scores.get, reverse=True)
-    st.session_state.preds = top[:4]
-    st.session_state.preds.append(next((m for m in [1, 8, 5, 7] if m not in top[:4]), 1))
-    mx = max(scores.values()) if scores.values() else 1
-    probs = {i: int((scores[i]/mx)*100) for i in range(1, 9)}
-else: probs = {i: 0 for i in range(1, 9)}
-
-# --- 5. واجهة المستخدم (CSS الموحد) ---
+# --- 5. الواجهة (المربع الموحد - Predator UI) ---
 st.markdown(f"""<style>
-    .master-box {{ border: 2px solid {'#ff4b4b' if st.session_state.anti_fraud else '#39ff14'}; 
-    background: #000; padding: 20px; border-radius: 20px; text-align: center; color: white; }}
-    .gap-card {{ background: #111; border: 1px solid #333; padding: 5px; border-radius: 8px; font-size: 11px; }}
+    .predator-box {{
+        border: 3px solid {color_theme};
+        background: #000;
+        padding: 20px;
+        border-radius: 30px;
+        text-align: center;
+        box-shadow: 0 0 25px {color_theme}44;
+    }}
+    .stat-text {{ font-size: 14px; color: #888; }}
+    .highlight {{ font-size: 22px; font-weight: bold; color: white; }}
 </style>""", unsafe_allow_html=True)
 
-with st.expander("💰 المبالغ والسيولة"):
-    c1, c2, c3 = st.columns(3)
-    wallet = c1.number_input("المحفظة", value=4400)
-    bq = c2.number_input("المربع", value=50); bi = c3.number_input("التأمين", value=100)
+with st.expander("💰 تحكم السيولة"):
+    bq = st.number_input("رهان المربع", value=50)
+    bi = st.number_input("رهان التأمين", value=100)
 
-st.markdown('<div class="master-box">', unsafe_allow_html=True)
-st.markdown(f'<div style="display:flex; justify-content:space-between; margin-bottom:15px;">'
-            f'<div>الرصيد: {wallet + st.session_state.balance}</div>'
-            f'<div style="color:{"#39ff14" if st.session_state.balance >=0 else "#ff4b4b"};">الصافي: {st.session_state.balance:+}</div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="predator-box">', unsafe_allow_html=True)
+st.markdown(f'<div style="display:flex; justify-content:space-between;">'
+            f'<div class="stat-text">الرصيد الكلي<br><span class="highlight">{4400+st.session_state.balance}</span></div>'
+            f'<div class="stat-text">صافي الربح<br><span class="highlight" style="color:{color_theme};">{st.session_state.balance:+}</span></div>'
+            f'</div>', unsafe_allow_html=True)
 
-# المربع الذهبي
-st.markdown('<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;">' + 
-            "".join([f'<div style="background:#0a0a0a; border:1px solid #39ff14; padding:10px; border-radius:12px;">{SYMBOLS[c]}<br>{probs[c]}%</div>' for c in st.session_state.preds[:4]]) + '</div>', unsafe_allow_html=True)
+# المربع الذهبي (التوقعات)
+st.markdown('<div style="margin: 20px 0; display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;">' + 
+            "".join([f'<div style="background:#111; border:1px solid {color_theme}; padding:15px; border-radius:15px; font-size:25px;">{SYMBOLS[c]}</div>' for c in st.session_state.preds[:4]]) + '</div>', unsafe_allow_html=True)
 
-st.markdown(f'<div style="margin-top:15px; padding:10px; background:#222; border-radius:10px; font-weight:bold; color:{"#ff4b4b" if st.session_state.anti_fraud else "#39ff14"};">{advice}</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="background:{color_theme}22; border:1px dashed {color_theme}; padding:10px; border-radius:12px; font-weight:bold; color:{color_theme};">{status_msg}</div>', unsafe_allow_html=True)
 
-# رادار الاستحقاق (أهم إضافة)
-st.markdown('<div style="margin-top:15px; display:grid; grid-template-columns: repeat(4, 1fr); gap:5px;">' + 
-            "".join([f'<div class="gap-card"><b>{SYMBOLS[c]}</b><br>{gaps[c]} جولة</div>' for c in [5, 7, 6, 8]]) + '</div>', unsafe_allow_html=True)
-
-st.markdown(f'<div style="margin-top:10px; font-size:12px; color:#00aaff;">🛡️ تأمين: {SYMBOLS[st.session_state.preds[4]]} | سجل: {" ".join([SYMBOLS[x] for x in hist[-5:]])}</div>', unsafe_allow_html=True)
+# الرادار السفلي
+st.markdown(f'<div style="margin-top:15px; display:flex; justify-content:space-around; font-size:12px; color:#555;">'
+            f'<div>🛡️ التأمين: {SYMBOLS[st.session_state.preds[4]]}</div>'
+            f'<div>📊 النمط: {len(st.session_state.history)} جولات</div>'
+            f'<div>⚡ القوة: {st.session_state.cur_streak}</div></div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # أزرار الإدخال
-st.write(""); r1, r2 = st.columns(5), st.columns(4)
-for i, c in enumerate([5, 7, 6, 8, 9]):
-    if r1[i].button(SYMBOLS[c], key=f"f1_{c}"): register_result(c, bq, bi); st.rerun()
-for i, c in enumerate([1, 2, 3, 4]):
-    if r2[i].button(SYMBOLS[c], key=f"f2_{c}"): register_result(c, bq, bi); st.rerun()
+st.write(""); c1, c2 = st.columns(5), st.columns(4)
+for i, code in enumerate([5, 7, 6, 8, 9]):
+    if c1[i].button(SYMBOLS[code], key=f"p1_{code}"): register_result(code, bq, bi); st.rerun()
+for i, code in enumerate([1, 2, 3, 4]):
+    if c2[i].button(SYMBOLS[code], key=f"p2_{code}"): register_result(code, bq, bi); st.rerun()
+
+if st.button("↩️ تصحيح آخر خطأ"):
+    if st.session_state.history:
+        st.session_state.history.pop(); st.rerun()
